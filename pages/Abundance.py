@@ -12,7 +12,7 @@ st.set_page_config(
 
 @st.cache_data
 def get_abundance_data():
-    abundance = pd.read_csv('~/work/data/global/ccle/proteomics/CCLE_imputed_all.csv')
+    abundance = pd.read_csv('data/CCLE_imputed_all.csv')
     abundance = abundance.rename(columns={'Gene':'Protein'})
     return abundance
 
