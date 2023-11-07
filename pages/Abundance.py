@@ -6,8 +6,8 @@ import seaborn as sns
 
 
 st.set_page_config(
-    page_title="SimKO - Abundance",
-    page_icon="🧫",
+    page_title="SimKO - Abundance data",
+    page_icon="🥼",
 )
 
 @st.cache_data

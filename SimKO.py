@@ -2,10 +2,10 @@ import streamlit as st
 
 st.set_page_config(
     page_title="SimKO",
-    page_icon="🧫",
+    page_icon="🥼",
 )
 
-st.write("# Welcome to SimKO! 🧫")
+st.write("# Welcome to SimKO! 🥼")
 
 # st.sidebar.success("Select a demo above.")
 
