@@ -86,6 +86,8 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 # chart_data = chart_data[0:x]
 # chart_data = chart_data * y
 
+
+
 protein_list = st.multiselect(
     'Proteins for KO',
      abundance.index, placeholder='Add proteins to analyse')
@@ -105,6 +107,13 @@ if protein_list:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
 
 
+    st.markdown(
+        """
+        **Mean abundance, expression and mutation count change across high and low classes** 
+        """
+    )
+
+
     protein_select = st.multiselect(
         'Select additional proteins differences to view',
         abundance.index, placeholder='Add additional proteins to view')
@@ -122,7 +131,11 @@ if protein_list:
     st.dataframe(diff_summary.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
 
-
+    st.markdown(
+        """
+        **Proteins most effected by simulated KO of given proteins** 
+        """
+    )
     
     n = st.slider('Number of top / bottom proteins to show by differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
  
