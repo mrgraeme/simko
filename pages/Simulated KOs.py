@@ -11,18 +11,18 @@ st.set_page_config(
 
 @st.cache_data
 def get_abundance_data():
-    abundance = pd.read_csv('data/abundance.csv')
+    abundance = pd.read_csv('./data/abundance.csv')
     abundance = abundance.set_index('protein')
     return abundance
 
 @st.cache_data
 def get_expression_data():
-    expression = pd.read_csv('data/expression.csv')
+    expression = pd.read_csv('./data/expression.csv')
     expression = expression.set_index('protein')
     return expression
 
 def get_mutation_data():
-    mutation = pd.read_csv('data/mutation.csv')
+    mutation = pd.read_csv('./data/mutation.csv')
     mutation = mutation.set_index('protein')
     return mutation
 
