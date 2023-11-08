@@ -5,21 +5,27 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 st.set_page_config(
-    page_title="SimKO - SimKO",
-    page_icon="🧫",
+    page_title="SimKO - KO Simulation",
+    page_icon="🥼",
 )
 
 @st.cache_data
 def get_abundance_data():
-    abundance = pd.read_csv('data/CCLE_imputed_all.csv')
-    abundance = abundance.rename(columns={'Gene':'Protein'})
+    abundance = pd.read_csv('data/abundance.csv')
+    abundance = abundance.set_index('protein')
     return abundance
 
-def get_classes_by_mean_abundance(protein_list, abundance, n=10):
-    protein_list_abundance = abundance.loc[abundance['Protein'].isin(protein_list)]
+@st.cache_data
+def get_expression_data():
+    expression = pd.read_csv('data/expression.csv')
+    expression = expression.set_index('protein')
+    return expression
+
+def get_classes_by_mean_abundance(protein_list, abundance, n=20):
+    protein_list_abundance = abundance.loc[abundance.index.isin(protein_list)]
     protein_list_abundance = protein_list_abundance.T
-    protein_list_abundance.columns = protein_list_abundance.iloc[0]
-    protein_list_abundance = protein_list_abundance.iloc[1:]
+    # protein_list_abundance.columns = protein_list_abundance.iloc[0]
+    # protein_list_abundance = protein_list_abundance.iloc[1:]
     protein_list_abundance['mean'] = protein_list_abundance.mean(axis=1)
     protein_list_abundance = protein_list_abundance.sort_values("mean", ascending = False)
     high = protein_list_abundance.head(n)
@@ -29,26 +35,33 @@ def get_classes_by_mean_abundance(protein_list, abundance, n=10):
     protein_classes = pd.concat([high, low])
     return pd.DataFrame(protein_classes)
 
-def get_differentials(class_df, abundance):
-    abundance = abundance.set_index('Protein', append=True)
+def get_differentials(class_df, data_df):
     high_class = list(class_df.loc[class_df['class']=='high'].index)
     low_class = list(class_df.loc[class_df['class']=='low'].index)
-    abundance_diff = pd.DataFrame()
-    abundance_diff['high'] = abundance[high_class].mean(axis=1)
-    abundance_diff['low'] = abundance[low_class].mean(axis=1)
-    abundance_diff = abundance_diff.reset_index().iloc[:,1:]
-    abundance_diff['diff'] = (abundance_diff['low'] - abundance_diff['high'])
-    abundance_diff = abundance_diff.sort_values('diff', ascending=True)
-    return abundance_diff 
+    diff_df = pd.DataFrame()
+    diff_df['high'] = data_df.filter(high_class).mean(axis=1)
+    diff_df['low'] = data_df.filter(low_class).mean(axis=1)
+    diff_df['diff'] = (diff_df['low'] - diff_df['high'])
+    diff_df = diff_df.sort_values('diff', ascending=True)
+    return diff_df
+
+def get_diff_summary(diff_abund_df, diff_exp_df, protein_list):
+    abundance_summary = diff_abund_df.loc[diff_abund_df.index.isin(protein_list)]
+    abundance_summary.columns = ['Abundance - ' + n for n in abundance_summary.columns]
+    expression_summary = diff_exp_df.loc[diff_exp_df.index.isin(protein_list)]
+    expression_summary.columns = ['Expression - ' + n for n in expression_summary.columns]
+    diff_summary = pd.concat([abundance_summary, expression_summary], axis=1)
+    return diff_summary
 
 
+abundance = get_abundance_data()
+expression = get_expression_data()
+cmap = plt.cm.get_cmap('RdYlBu_r')
 
 # protein_list = ['ARID1A', 'PBRM1', 'BRAF']
 # get_classes_by_mean_abundance(protein_list, abundance)
 
 
-abundance = get_abundance_data()
-cmap = plt.cm.get_cmap('RdYlBu_r')
 
 # x = st.slider('x', min_value=10, max_value=50)  # 👈 this is a widget
 # st.write(x, 'squared is', x * x)
@@ -59,10 +72,9 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 
 protein_list = st.multiselect(
     'Proteins for KO',
-     abundance['Protein'], placeholder='Add proteins to analyse')
+     abundance.index, placeholder='Add proteins to analyse')
 
 
-cmap = plt.cm.get_cmap('RdYlBu_r')
 if protein_list:
     class_df = get_classes_by_mean_abundance(protein_list, abundance)
     
@@ -77,23 +89,27 @@ if protein_list:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
 
 
-  
+    diff_abund_df = get_differentials(class_df, abundance)
+    diff_exp_df = get_differentials(class_df, expression)
+    diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, protein_list)
+
+    st.dataframe(diff_summary.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+
     
     n = st.slider('Number of top / bottom proteins to show by differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
     protein_select = st.multiselect(
     'Select additional proteins differences to view',
-     abundance['Protein'], placeholder='Add additional proteins to view')
+     abundance.index, placeholder='Add additional proteins to view')
 
-
-
-    diff_df = get_differentials(class_df, abundance)
-    diff_proteins = list(diff_df.head(n)['Protein']) + list(diff_df.tail(n)['Protein'])
+    
+    diff_proteins = list(diff_abund_df.head(n).index) + list(diff_abund_df.tail(n).index)
 
     if protein_select:
         diff_proteins = diff_proteins + protein_select
 
-    diff_df = diff_df.loc[diff_df['Protein'].isin(diff_proteins)]
-    st.table(diff_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
+    diff_df = get_diff_summary(diff_abund_df, diff_exp_df, diff_proteins)
+
+    st.table(diff_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
 
     
