@@ -21,6 +21,12 @@ def get_expression_data():
     expression = expression.set_index('protein')
     return expression
 
+def get_mutation_data():
+    mutation = pd.read_csv('data/mutation.csv')
+    mutation = mutation.set_index('protein')
+    return mutation
+
+
 def get_classes_by_mean_abundance(protein_list, abundance, n=20):
     protein_list_abundance = abundance.loc[abundance.index.isin(protein_list)]
     protein_list_abundance = protein_list_abundance.T
@@ -45,17 +51,27 @@ def get_differentials(class_df, data_df):
     diff_df = diff_df.sort_values('diff', ascending=True)
     return diff_df
 
-def get_diff_summary(diff_abund_df, diff_exp_df, protein_list):
+def process_mutations():
+    high_class = list(class_df.loc[class_df['class']=='high'].index)
+    low_class = list(class_df.loc[class_df['class']=='low'].index)
+
+    pass
+
+
+def get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, protein_list):
     abundance_summary = diff_abund_df.loc[diff_abund_df.index.isin(protein_list)]
     abundance_summary.columns = ['Abundance - ' + n for n in abundance_summary.columns]
     expression_summary = diff_exp_df.loc[diff_exp_df.index.isin(protein_list)]
     expression_summary.columns = ['Expression - ' + n for n in expression_summary.columns]
-    diff_summary = pd.concat([abundance_summary, expression_summary], axis=1)
+    mutation_summary = diff_mut_df.loc[diff_mut_df.index.isin(protein_list)]
+    mutation_summary.columns = ['Mutation - ' + n for n in mutation_summary.columns]
+    diff_summary = pd.concat([abundance_summary, expression_summary, mutation_summary], axis=1)
     return diff_summary
 
 
 abundance = get_abundance_data()
 expression = get_expression_data()
+mutation = get_mutation_data()
 cmap = plt.cm.get_cmap('RdYlBu_r')
 
 # protein_list = ['ARID1A', 'PBRM1', 'BRAF']
@@ -89,27 +105,32 @@ if protein_list:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
 
 
+    protein_select = st.multiselect(
+        'Select additional proteins differences to view',
+        abundance.index, placeholder='Add additional proteins to view')
+
+    if protein_select:
+        show_proteins = protein_list + protein_select
+    else:
+        show_proteins = protein_list
+
     diff_abund_df = get_differentials(class_df, abundance)
     diff_exp_df = get_differentials(class_df, expression)
-    diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, protein_list)
+    diff_mut_df = get_differentials(class_df, mutation)
 
+    diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, show_proteins)
     st.dataframe(diff_summary.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+
+
 
     
     n = st.slider('Number of top / bottom proteins to show by differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
-    protein_select = st.multiselect(
-    'Select additional proteins differences to view',
-     abundance.index, placeholder='Add additional proteins to view')
-
+ 
     
     diff_proteins = list(diff_abund_df.head(n).index) + list(diff_abund_df.tail(n).index)
 
-    if protein_select:
-        diff_proteins = diff_proteins + protein_select
-
-    diff_df = get_diff_summary(diff_abund_df, diff_exp_df, diff_proteins)
-
-    st.table(diff_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+    diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
+    st.table(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
 
     
