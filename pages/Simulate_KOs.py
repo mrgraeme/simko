@@ -106,7 +106,7 @@ if protein_list:
 
     with tab1:
         fig = plt.figure(figsize=(10, 4))
-        sns.heatmap(class_df[['mean']].sort_values('mean').T.astype(float).round(2), square=True, cmap="vlag", annot=True,annot_kws={'size': 5.5}, cbar=False)
+        sns.heatmap(class_df[['mean']].sort_values('mean').T.astype(float).round(1), square=True, cmap="vlag", annot=True,annot_kws={'size': 5.5}, cbar=False)
         st.pyplot(fig)
 
     with tab2:
