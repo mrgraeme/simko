@@ -39,9 +39,7 @@ tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
 st.write("### View and filter protein data! 🥼")
 
-protein_list = st.multiselect(
-    'Proteins to view (Tip: Filter for celllines first to make this run faster!)',
-     abundance.index, placeholder='Add proteins to view')
+
 
 lineage_list = st.multiselect(
     'Filter for tissue',
@@ -56,6 +54,10 @@ cl_list = st.multiselect(
 
 if cl_list:
     cls = cl_list
+
+protein_list = st.multiselect(
+    'Proteins to view (Tip: Filter for cell-lines / lineage first to make this run faster!)',
+     abundance.index, placeholder='Add proteins to view')
 
 
 
