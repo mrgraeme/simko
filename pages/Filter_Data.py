@@ -33,40 +33,45 @@ expression = get_expression_data()
 mutation = get_mutation_data()
 cmap = plt.cm.get_cmap('RdYlBu_r')
 
+cls = list(abundance.columns)
+tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
-st.markdown(
-    """
-    *View and filter protein data* 
-    """
-)
-
+st.write("### View and filter protein data! 🥼")
 
 protein_list = st.multiselect(
-    'Proteins for KO',
-     abundance.index, placeholder='Add proteins to analyse')
+    'Proteins to view (Tip: Filter for celllines first to make this run faster!)',
+     abundance.index, placeholder='Add proteins to view')
+
+lineage_list = st.multiselect(
+    'Filter for tissue',
+     tissues, placeholder='Add proteins to view')
+
+if lineage_list:
+    cls = [s for s in cls if any(xs in s for xs in lineage_list)]
 
 cl_list = st.multiselect(
-    'CLs for KO',
-     abundance.columns, placeholder='Add CLs to view')
+    'cell lines to view',
+     cls, placeholder='Add CLs to view')
+
+if cl_list:
+    cls = cl_list
+
 
 
 if protein_list:
-    abundance_filter = abundance.loc[abundance.index.isin(protein_list)]
-    expression_filter = expression.loc[expression.index.isin(protein_list)]
-    mutation_filter = mutation.loc[mutation.index.isin(protein_list)]
-
-    if cl_list:
-        abundance_filter = abundance_filter.filter(cl_list)
-        expression_filter = expression_filter.filter(cl_list)
-        mutation_filter = mutation_filter.filter(cl_list)
 
     tab1, tab2, tab3 = st.tabs(["abundance", "expression", "mutation"])
 
     with tab1:
+        abundance_filter = abundance.loc[protein_list].filter(cls)
         st.dataframe(abundance_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
+
     with tab2:
+        expression_filter = expression.loc[expression.index.isin(protein_list)].filter(cls)
         st.dataframe(expression_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
+    
     with tab3:
+        mutation_filter = mutation.loc[mutation.index.isin(protein_list)].filter(cls)
         st.dataframe(mutation_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
 
 
