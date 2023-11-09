@@ -43,7 +43,7 @@ st.write("### View and filter protein data! 🥼")
 
 lineage_list = st.multiselect(
     'Filter for tissue',
-     tissues, placeholder='Add proteins to view')
+     tissues, placeholder='Add tissues to view')
 
 if lineage_list:
     cls = [s for s in cls if any(xs in s for xs in lineage_list)]
