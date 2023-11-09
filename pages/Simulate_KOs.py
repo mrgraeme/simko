@@ -143,7 +143,7 @@ if protein_list:
         """
     )
     
-    n = st.slider('Number of top / bottom proteins to show by differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
+    n = st.slider('Number proteins by high differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
  
     
     diff_proteins = list(diff_abund_df.head(n).index) + list(diff_abund_df.tail(n).index)
