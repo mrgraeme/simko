@@ -7,7 +7,9 @@ import seaborn as sns
 st.set_page_config(
     page_title="SimKO - Simulate KOs",
     page_icon="🥼",
+    layout="wide"
 )
+
 
 @st.cache_data
 def get_abundance_data():
@@ -111,7 +113,6 @@ if protein_list:
 
     with tab2:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
-
 
     st.markdown(
         """

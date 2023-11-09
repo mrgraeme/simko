@@ -8,18 +8,8 @@ import seaborn as sns
 st.set_page_config(
     page_title="SimKO",
     page_icon="🥼",
+    layout="wide"
 )
-
-@st.cache_data
-def get_abundance_data():
-    abundance = pd.read_csv('data/abundance.csv')
-    abundance = abundance.set_index('protein')
-    return abundance
-
-@st.cache_data
-def get_expression_data():
-    transcriptome = pd.read_csv('data/expression.csv')
-
 
 # protein_list = ['ARID1A', 'PBRM1', 'BRAF']
 # get_classes_by_mean_abundance(protein_list, abundance)

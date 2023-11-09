@@ -7,6 +7,7 @@ import seaborn as sns
 st.set_page_config(
     page_title="SimKO - Filter data",
     page_icon="🥼",
+    layout="wide"
 )
 
 @st.cache_data
