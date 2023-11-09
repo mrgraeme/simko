@@ -56,7 +56,7 @@ if cl_list:
     cls = cl_list
 
 protein_list = st.multiselect(
-    'Proteins to view (Tip: Filter for cell-lines / lineage first to make this run faster!)',
+    'Proteins to view (Tip: Filter for tissues / cell-lines first to make this run faster!)',
      abundance.index, placeholder='Add proteins to view')
 
 
