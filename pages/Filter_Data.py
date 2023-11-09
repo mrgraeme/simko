@@ -49,7 +49,7 @@ if lineage_list:
     cls = [s for s in cls if any(xs in s for xs in lineage_list)]
 
 cl_list = st.multiselect(
-    'cell-lines to view',
+    'Filter for cell-lines',
      cls, placeholder='Add cell-lines to view')
 
 if cl_list:
