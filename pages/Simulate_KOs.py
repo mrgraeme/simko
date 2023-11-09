@@ -91,7 +91,11 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 # chart_data = chart_data[0:x]
 # chart_data = chart_data * y
 
-
+st.markdown(
+    """
+    *Simulate protein KO data* 
+    """
+)
 
 protein_list = st.multiselect(
     'Proteins for KO',

@@ -34,6 +34,13 @@ mutation = get_mutation_data()
 cmap = plt.cm.get_cmap('RdYlBu_r')
 
 
+st.markdown(
+    """
+    *View and filter protein data* 
+    """
+)
+
+
 protein_list = st.multiselect(
     'Proteins for KO',
      abundance.index, placeholder='Add proteins to analyse')
