@@ -9,8 +9,6 @@ st.set_page_config(
     page_icon="🥼",
     layout="wide"
 )
-
-
 @st.cache_data
 def get_abundance_data():
     abundance = pd.read_csv('./data/abundance.csv')
@@ -37,30 +35,31 @@ def get_classes_by_mean_abundance(protein_list, abundance, n=20):
     # protein_list_abundance = protein_list_abundance.iloc[1:]
     protein_list_abundance['mean'] = protein_list_abundance.mean(axis=1)
     protein_list_abundance = protein_list_abundance.sort_values("mean", ascending = False)
-    high = protein_list_abundance.head(n)
-    high['class'] = 'high'
+    # median = protein_list_abundance.head(n)
+    median = protein_list_abundance.tail(round((protein_list_abundance.shape[0]/2) + n/2)).head(n)  # Should take middle n rows
+    median['class'] = 'median'
     low = protein_list_abundance.tail(n)
     low['class'] = 'low'
-    protein_classes = pd.concat([high, low])
+    protein_classes = pd.concat([median, low])
     return pd.DataFrame(protein_classes)
 
 def get_differentials(class_df, data_df):
-    high_class = list(class_df.loc[class_df['class']=='high'].index)
+    median_class = list(class_df.loc[class_df['class']=='median'].index)
     low_class = list(class_df.loc[class_df['class']=='low'].index)
     diff_df = pd.DataFrame()
-    diff_df['high'] = data_df.filter(high_class).mean(axis=1)
+    diff_df['median'] = data_df.filter(median_class).mean(axis=1)
     diff_df['low'] = data_df.filter(low_class).mean(axis=1)
-    diff_df['diff'] = (diff_df['low'] - diff_df['high'])
+    diff_df['diff'] = (diff_df['low'] - diff_df['median'])
     diff_df = diff_df.sort_values('diff', ascending=True)
     return diff_df
 
 def process_mutations(class_df, data_df):
-    high_class = list(class_df.loc[class_df['class']=='high'].index)
+    median_class = list(class_df.loc[class_df['class']=='median'].index)
     low_class = list(class_df.loc[class_df['class']=='low'].index)
     diff_df = pd.DataFrame()
-    diff_df['high'] = data_df.filter(high_class).sum(axis=1)
+    diff_df['median'] = data_df.filter(median_class).sum(axis=1)
     diff_df['low'] = data_df.filter(low_class).sum(axis=1)
-    diff_df['diff'] = (diff_df['low'] - diff_df['high'])
+    diff_df['diff'] = (diff_df['low'] - diff_df['median'])
     diff_df = diff_df.sort_values('diff', ascending=True)
     return diff_df
 
@@ -116,7 +115,7 @@ if protein_list:
 
     st.markdown(
         """
-        **Mean abundance, expression and mutation count change across high and low classes** 
+        **Mean abundance, expression and mutation count change across median and low classes** 
         """
     )
 
@@ -144,7 +143,7 @@ if protein_list:
         """
     )
     
-    n = st.slider('Number proteins by high differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
+    n = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
  
     
     diff_proteins = list(diff_abund_df.head(n).index) + list(diff_abund_df.tail(n).index)
@@ -152,7 +151,11 @@ if protein_list:
     diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
     st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
-
+    st.download_button('Download', 
+                       diff_abund_df.to_csv(index=True).encode('utf-8'), 
+                       "abundance_%s.csv" % ('_'.join(protein_list)),
+                       "text/csv",
+                       'download-csv')
     
 
 
