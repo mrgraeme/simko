@@ -160,7 +160,6 @@ if protein_list:
     
     n = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
  
-    
     diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n).index)
 
     diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
