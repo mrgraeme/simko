@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from scipy.stats import t
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -43,13 +44,27 @@ def get_classes_by_mean_abundance(protein_list, abundance, n=20):
     protein_classes = pd.concat([median, low])
     return pd.DataFrame(protein_classes)
 
+def ttest_from_sample_stats(row, n_cls = 20):
+    pooled_sd = np.sqrt((((n_cls-1)*(row['low_std']**2)) + ((n_cls-1)*(row['median_std']**2))) / (n_cls + n_cls - 2))
+    # print(pooled_sd)
+    t_stat = (row['low'] - row['median']) / (pooled_sd * np.sqrt(1/n_cls + 1/n_cls))
+    # print(t_stat)
+    p_value = 2*(1 - t.cdf(abs(t_stat), (n_cls + n_cls - 2)))
+    # print(p_value)
+    return p_value
+
 def get_differentials(class_df, data_df):
     median_class = list(class_df.loc[class_df['class']=='median'].index)
     low_class = list(class_df.loc[class_df['class']=='low'].index)
     diff_df = pd.DataFrame()
     diff_df['median'] = data_df.filter(median_class).mean(axis=1)
+    diff_df['median_std'] = data_df.filter(median_class).std(axis=1)
     diff_df['low'] = data_df.filter(low_class).mean(axis=1)
-    diff_df['diff'] = (diff_df['low'] - diff_df['median'])
+    diff_df['low_std'] = data_df.filter(low_class).std(axis=1)
+    # diff_df['diff'] = (diff_df['low'] - diff_df['median'])
+    diff_df['diff'] = diff_df['low'] - diff_df['median']
+    diff_df['p'] = diff_df.apply(ttest_from_sample_stats, axis=1)
+    diff_df = diff_df.drop(columns=['low_std', 'median_std'])
     diff_df = diff_df.sort_values('diff', ascending=True)
     return diff_df
 
@@ -146,12 +161,12 @@ if protein_list:
     n = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
  
     
-    diff_proteins = list(diff_abund_df.head(n).index) + list(diff_abund_df.tail(n).index)
+    diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n).index)
 
     diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
     st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
-    st.download_button('Download', 
+    st.download_button('Download All Abundance', 
                        diff_abund_df.to_csv(index=True).encode('utf-8'), 
                        "abundance_%s.csv" % ('_'.join(protein_list)),
                        "text/csv",
