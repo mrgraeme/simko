@@ -41,7 +41,6 @@ def get_classes_by_mutation(protein_list, mutation, n):
     mutated['class'] = 'mutated'
     non_mutated['class'] = 'non-mutated'
     protein_classes = pd.concat([mutated, non_mutated])
-    st.dataframe(protein_classes)
     return pd.DataFrame(protein_classes)
 
 def ttest_from_sample_stats(row, n_cls = 20):
