@@ -76,7 +76,8 @@ def get_differentials_boxplot(class_df, data_df, protein_list, n):
     class_df = class_df[['class']].reset_index()
     box_data = data_df.merge(class_df, how='left', left_on='variable', right_on='index').dropna()
     fig = plt.figure(figsize=(10, 4))
-    sns.boxplot(data=box_data, x="protein", y="value", hue='class')
+
+    sns.boxplot(data=box_data, x="protein", y="value", hue='class', palette='pastel')
     return fig
 
 
@@ -131,69 +132,73 @@ if tissue_list:
 if protein_list:
     n = ((abundance.shape[1]-1) // 3) if abundance.shape[1] < 60 else 20
     class_df = get_classes_by_mutation(protein_list, mutation, n)
-    
-    tab1, tab2 = st.tabs(["figure", "data"])
 
-    with tab1:
-        fig = plt.figure(figsize=(10, 4))
-        sns.heatmap(class_df[['mutation_count']].sort_values('mutation_count').T.astype(float).round(1), square=True, cmap="vlag", annot=True,annot_kws={'size': 5.5}, cbar=False)
+    if len(class_df) == 0:
+        st.write("Sorry - There's not enough mutation data available to run this analysis")
+    else:
+    
+        tab1, tab2 = st.tabs(["figure", "data"])
+
+        with tab1:
+            fig = plt.figure(figsize=(10, 4))
+            sns.heatmap(class_df[['mutation_count']].sort_values('mutation_count').T.astype(float).round(1), square=True, cmap="vlag", annot=True,annot_kws={'size': 5.5}, cbar=False)
+            st.pyplot(fig)
+
+        with tab2:
+            st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
+
+
+
+        st.markdown(
+            """
+            **Mean abundance, expression and mutation count change across median and low classes** 
+            """
+        )
+
+
+        protein_select = st.multiselect(
+            'Select additional proteins differences to view',
+            abundance.index, placeholder='Add additional proteins to view')
+
+        if protein_select:
+            show_proteins = protein_list + protein_select
+        else:
+            show_proteins = protein_list
+
+        diff_abund_df = get_differentials(class_df, abundance, n)
+        diff_exp_df = get_differentials(class_df, expression, n)
+        diff_mut_df = process_mutations(class_df, mutation)
+
+        diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, show_proteins)
+
+        fig = get_differentials_boxplot(class_df, abundance, show_proteins, n)
         st.pyplot(fig)
 
-    with tab2:
-        st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
+
+        st.dataframe(diff_summary.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+
+        
 
 
-
-    st.markdown(
-        """
-        **Mean abundance, expression and mutation count change across median and low classes** 
-        """
-    )
-
-
-    protein_select = st.multiselect(
-        'Select additional proteins differences to view',
-        abundance.index, placeholder='Add additional proteins to view')
-
-    if protein_select:
-        show_proteins = protein_list + protein_select
-    else:
-        show_proteins = protein_list
-
-    diff_abund_df = get_differentials(class_df, abundance, n)
-    diff_exp_df = get_differentials(class_df, expression, n)
-    diff_mut_df = process_mutations(class_df, mutation)
-
-    diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, show_proteins)
-
-    fig = get_differentials_boxplot(class_df, abundance, show_proteins, n)
-    st.pyplot(fig)
-
-
-    st.dataframe(diff_summary.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
-
+        st.markdown(
+            """
+            **Proteins most effected by simulated KO of given proteins** 
+            """
+        )
+        
+        n_outlayers = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
     
+        diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n_outlayers).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n_outlayers).index)
 
+        diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
+        st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
-    st.markdown(
-        """
-        **Proteins most effected by simulated KO of given proteins** 
-        """
-    )
-    
-    n_outlayers = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
- 
-    diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n_outlayers).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n_outlayers).index)
-
-    diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
-    st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
-
-    st.download_button('Download All Abundance', 
-                       diff_abund_df.to_csv(index=True).encode('utf-8'), 
-                       "abundance_%s.csv" % ('_'.join(protein_list)),
-                       "text/csv",
-                       'download-csv')
-    
+        st.download_button('Download All Abundance', 
+                        diff_abund_df.to_csv(index=True).encode('utf-8'), 
+                        "abundance_%s.csv" % ('_'.join(protein_list)),
+                        "text/csv",
+                        'download-csv')
+        
 
 
 else:
