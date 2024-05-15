@@ -133,7 +133,6 @@ if tissue_list:
 if protein_list:
     n = ((abundance.shape[1]-1) // 3) if abundance.shape[1] < 60 else 20
     class_df = get_classes_by_mean_abundance(protein_list, abundance, n)
-    st.dataframe(class_df)
     
     tab1, tab2 = st.tabs(["figure", "data"])
 

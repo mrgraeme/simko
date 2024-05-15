@@ -28,7 +28,6 @@ def get_mutation_data():
     mutation = mutation.set_index('protein')
     return mutation
 
-
 abundance = get_abundance_data()
 expression = get_expression_data()
 mutation = get_mutation_data()
@@ -38,8 +37,6 @@ cls = list(abundance.columns)
 tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
 st.write("### View and filter protein data! 🥼")
-
-
 
 lineage_list = st.multiselect(
     'Filter for tissue',
@@ -59,28 +56,17 @@ protein_list = st.multiselect(
     'Proteins to view (Tip: Filter for tissues / cell-lines first to make this run faster!)',
      abundance.index, placeholder='Add proteins to view')
 
-
-
 if protein_list:
-
     tab1, tab2, tab3 = st.tabs(["abundance", "expression", "mutation"])
-
     with tab1:
         abundance_filter = abundance.loc[protein_list].filter(cls)
         st.dataframe(abundance_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
-
     with tab2:
         expression_filter = expression.loc[expression.index.isin(protein_list)].filter(cls)
         st.dataframe(expression_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
-    
     with tab3:
         mutation_filter = mutation.loc[mutation.index.isin(protein_list)].filter(cls)
         st.dataframe(mutation_filter.style.background_gradient(cmap=cmap,vmin=(-6),vmax=6,axis=None).format("{:.3f}"), ) # .format("{:.2%}")
-
-
-
-
-
 
 else:
     st.write('Please select at least one protein.')
