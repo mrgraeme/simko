@@ -32,12 +32,12 @@ def get_mutation_data():
 def get_classes_by_mutation(protein_list, mutation, n):
     mutation_filter = mutation.loc[mutation.index.isin(protein_list)].T
     mutation_filter['mutation_count'] = mutation_filter.sum(axis=1)
-    mutated = mutation_filter.loc[mutation_filter['mutation_count'] > 0]
+    mutated = mutation_filter.loc[mutation_filter['mutation_count'] > 0].sort_values('mutation_count', ascending=False)
     non_mutated = mutation_filter.loc[mutation_filter['mutation_count'] == 0]
-    if len(mutated) < len(non_mutated):
-        non_mutated = non_mutated.sample(n=len(mutated))
-    elif len(mutated) > len(non_mutated):
-        mutated = mutated.sample(n=len(non_mutated))
+    # if len(mutated) < len(non_mutated):
+    #     non_mutated = non_mutated.sample(n=len(mutated))
+    # elif len(mutated) > len(non_mutated):
+    #     mutated = mutated.sample(n=len(non_mutated))
     mutated['class'] = 'mutated'
     non_mutated['class'] = 'non-mutated'
     protein_classes = pd.concat([mutated, non_mutated])
@@ -160,10 +160,11 @@ if protein_list:
             'Select additional proteins differences to view',
             abundance.index, placeholder='Add additional proteins to view')
 
+
         if protein_select:
-            show_proteins = protein_list + protein_select
+            show_proteins = protein_select + protein_list 
         else:
-            show_proteins = protein_list
+            show_proteins = [] + protein_list
 
         diff_abund_df = get_differentials(class_df, abundance, n)
         diff_exp_df = get_differentials(class_df, expression, n)
