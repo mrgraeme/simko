@@ -24,9 +24,16 @@ def get_expression_data():
 
 @st.cache_data
 def get_mutation_data():
-    mutation = pd.read_csv('./data/mutation.csv')
+    mutation = pd.read_csv('./data/full_mutation.csv')
     mutation = mutation.set_index('protein')
     return mutation
+
+@st.cache_data
+def get_dependency_data():
+    dependency = pd.read_csv('./data/dependency.csv')
+    dependency = dependency.set_index('protein')
+    return dependency
+
 
 
 def get_classes_by_mutation(protein_list, mutation, n):
@@ -91,20 +98,23 @@ def process_mutations(class_df, data_df):
     diff_df = diff_df.sort_values('diff', ascending=True)
     return diff_df
 
-def get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, protein_list):
+def get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_depenency_df, protein_list):
     abundance_summary = diff_abund_df.loc[diff_abund_df.index.isin(protein_list)]
     abundance_summary.columns = ['Abundance - ' + n for n in abundance_summary.columns]
     expression_summary = diff_exp_df.loc[diff_exp_df.index.isin(protein_list)]
     expression_summary.columns = ['Expression - ' + n for n in expression_summary.columns]
     mutation_summary = diff_mut_df.loc[diff_mut_df.index.isin(protein_list)]
     mutation_summary.columns = ['Mutation - ' + n for n in mutation_summary.columns]
-    diff_summary = pd.concat([abundance_summary, expression_summary, mutation_summary], axis=1)
+    dependency_summary = diff_dependency_df.loc[diff_dependency_df.index.isin(protein_list)]
+    dependency_summary.columns = ['Dependency - ' + n for n in dependency_summary.columns]
+    diff_summary = pd.concat([abundance_summary, expression_summary, mutation_summary, dependency_summary], axis=1)
     return diff_summary
 
 
 abundance = get_abundance_data()
 expression = get_expression_data()
 mutation = get_mutation_data()
+dependency = get_dependency_data()
 cmap = plt.cm.get_cmap('RdYlBu_r')
 
 cls = list(abundance.columns)
@@ -126,6 +136,7 @@ if tissue_list:
     abundance = abundance.filter(cls)
     expression = expression.filter(cls)
     mutation = mutation.filter(cls)
+    dependency = dependency.filter(cls)
 
     # st.dataframe(abundance.head(4).style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)  ### For debugging - delete
 
@@ -168,9 +179,10 @@ if protein_list:
 
         diff_abund_df = get_differentials(class_df, abundance, n)
         diff_exp_df = get_differentials(class_df, expression, n)
+        diff_dependency_df = get_differentials(class_df, dependency, n)
         diff_mut_df = process_mutations(class_df, mutation)
 
-        diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, show_proteins)
+        diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_dependency_df, show_proteins)
 
         fig = get_differentials_boxplot(class_df, abundance, show_proteins, n)
         st.pyplot(fig)
@@ -189,9 +201,9 @@ if protein_list:
         
         n_outlayers = st.slider('Number proteins by median differential', value = 5, min_value=0, max_value=50, )  # 👈 this is a widget
     
-        diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n_outlayers).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n_outlayers).index)
+        diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.05].head(n_outlayers).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.05].tail(n_outlayers).index)
 
-        diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
+        diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_dependency_df, diff_proteins)
         st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
         st.download_button('Download All Abundance', 
