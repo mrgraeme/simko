@@ -134,7 +134,7 @@ if protein_list:
     n = ((abundance.shape[1]-1) // 3) if abundance.shape[1] < 60 else 20
     class_df = get_classes_by_mean_abundance(protein_list, abundance, n)
     
-    tab1, tab2 = st.tabs(["figure", "data"])
+    tab1, tab2 = st.tabs(["figure", "Figure Values"])
 
     with tab1:
         fig = plt.figure(figsize=(10, 4))
@@ -144,7 +144,8 @@ if protein_list:
     with tab2:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
 
-
+    
+        
 
     st.markdown(
         """
@@ -188,13 +189,32 @@ if protein_list:
     diff_proteins = list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].head(n_outlayers).index) + list(diff_abund_df.loc[diff_abund_df['p'] < 0.01].tail(n_outlayers).index)
 
     diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_proteins)
-    st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
-    st.download_button('Download All Abundance', 
-                       diff_abund_df.to_csv(index=True).encode('utf-8'), 
-                       "abundance_%s.csv" % ('_'.join(protein_list)),
-                       "text/csv",
-                       'download-csv')
+
+    tab1, tab2 = st.tabs(["Foldchange", "Abundance"])
+
+    with tab1:
+
+        st.dataframe(diff_top.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+
+        st.download_button('Download All Abundance Foldchange', 
+            diff_abund_df.to_csv(index=True).encode('utf-8'), 
+            "abundance_foldchange_%s.csv" % ('_'.join(protein_list)),
+            "text/csv",
+            'download-foldchange-csv')
+    
+
+        
+    with tab2:
+
+        st.dataframe(abundance[class_df.index].head(100).style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
+
+        st.download_button('Download All Abundance', 
+            abundance[class_df.index].to_csv(index=True).encode('utf-8'), 
+            "abundance_%s.csv" % ('_'.join(protein_list)),
+            "text/csv",
+            'download-abundance-csv')
+
     
 
 
