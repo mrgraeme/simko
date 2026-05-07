@@ -32,7 +32,7 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 cls = list(abundance.columns)
 tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
-st.write("### View and filter protein data! 🥼")
+st.write("### View and filter protein data 🔬")
 
 lineage_list = st.multiselect(
     'Filter for tissue',

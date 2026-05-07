@@ -116,7 +116,7 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 cls = list(abundance.columns)
 tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
-st.write("### Explore Mutation Effects! 👾")
+st.write("### Explore mutation effects 👾")
 
 protein_list = st.multiselect(
     'Proteins for KO',

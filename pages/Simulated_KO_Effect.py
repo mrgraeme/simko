@@ -107,7 +107,7 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 cls = list(abundance.columns)
 tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
-st.write("### Exlpore Abundance Change Effects! 🥼")
+st.write("### Exlpore abundance change effects 📤")
 
 protein_list = st.multiselect(
     'Proteins for KO',
