@@ -80,7 +80,7 @@ pytz==2025.2
 pyzmq==26.4.0
 referencing==0.36.2
 requests==2.32.3
-rich==15.0.0
+rich==10.14.0
 rpds-py==0.25.1
 ruamel.yaml==0.18.10
 ruamel.yaml.clib==0.2.12
@@ -94,11 +94,11 @@ spglib==2.6.0
 stack-data==0.6.3
 starlette==1.0.0
 streamlit==1.57.0
-streamlit-ace==0.1.1
-streamlit-antd==0.8.3
-streamlit-embeded==0.0.1
-streamlit-file-browser==3.2.22
-streamlit-molstar==0.4.21
+streamlit-ace
+streamlit-antd
+streamlit-embeded
+streamlit-file-browser
+streamlit-molstar
 sympy==1.14.0
 tabulate==0.9.0
 tenacity==9.1.2
