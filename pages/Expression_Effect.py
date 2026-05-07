@@ -29,17 +29,17 @@ def get_mutation_data():
     return mutation
 
 
-def get_classes_by_mean_abundance(protein_list, abundance, n):
-    protein_list_abundance = abundance.loc[abundance.index.isin(protein_list)]
-    protein_list_abundance = protein_list_abundance.T
-    # protein_list_abundance.columns = protein_list_abundance.iloc[0]
-    # protein_list_abundance = protein_list_abundance.iloc[1:]
-    protein_list_abundance['mean'] = protein_list_abundance.mean(axis=1)
-    protein_list_abundance = protein_list_abundance.sort_values("mean", ascending = False)
-    # median = protein_list_abundance.head(n)
-    median = protein_list_abundance.tail(round((protein_list_abundance.shape[0]/2) + n/2)).head(n)  # Should take middle n rows
+def get_classes_by_mean_expression(protein_list, expression, n):
+    protein_list_expression = expression.loc[expression.index.isin(protein_list)]
+    protein_list_expression = protein_list_expression.T
+    # protein_list_expression.columns = protein_list_expression.iloc[0]
+    # protein_list_expression = protein_list_expression.iloc[1:]
+    protein_list_expression['mean'] = protein_list_expression.mean(axis=1)
+    protein_list_expression = protein_list_expression.sort_values("mean", ascending = False)
+    # median = protein_list_expression.head(n)
+    median = protein_list_expression.tail(round((protein_list_expression.shape[0]/2) + n/2)).head(n)  # Should take middle n rows
     median['class'] = 'median'
-    low = protein_list_abundance.tail(n)
+    low = protein_list_expression.tail(n)
     low['class'] = 'low'
     protein_classes = pd.concat([median, low])
     return pd.DataFrame(protein_classes)
@@ -132,7 +132,7 @@ if tissue_list:
 
 if protein_list:
     n = ((abundance.shape[1]-1) // 3) if abundance.shape[1] < 60 else 20
-    class_df = get_classes_by_mean_abundance(protein_list, abundance, n)
+    class_df = get_classes_by_mean_expression(protein_list, expression, n)
     
     tab1, tab2 = st.tabs(["figure", "Figure Values"])
 
@@ -140,6 +140,7 @@ if protein_list:
         fig = plt.figure(figsize=(10, 4))
         sns.heatmap(class_df[['mean']].sort_values('mean').T.astype(float).round(1), square=True, cmap="vlag", annot=True,annot_kws={'size': 5.5}, cbar=False)
         st.pyplot(fig)
+
 
     with tab2:
         st.table(class_df.style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None))
@@ -206,8 +207,8 @@ if protein_list:
 
         
     with tab2:
-        abundance =  abundance.loc[diff_abund_df.index]
 
+        abundance =  abundance.loc[diff_abund_df.index]
         st.dataframe(abundance[class_df.index].head(100).style.background_gradient(cmap = cmap, vmin=(-6), vmax=6, axis=None).format("{:.3f}"),)
 
         st.download_button('Download All Abundance', 
