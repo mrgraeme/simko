@@ -48,9 +48,52 @@ cl_list = st.multiselect(
 if cl_list:
     cls = cl_list
 
+# --- NEW PASTE LOGIC START ---
+st.write("Protein Quick Paste")
+with st.expander("Paste a list of proteins"):
+    # Text area for raw input
+    pasted_proteins = st.text_area("Paste proteins (comma or newline separated)", 
+                                  help="Example: P53, EGFR, BRAC1")
+    
+    if st.button("Populate Protein Selection"):
+        if pasted_proteins:
+            # Parse the input: split by commas or newlines and strip whitespace
+            import re
+            input_list = re.split(r'[,\n]+', pasted_proteins)
+            input_list = [p.strip() for p in input_list if p.strip()]
+            
+            # Filter to ensure the pasted proteins actually exist in your index
+            valid_proteins = [p for p in input_list if p in abundance.index]
+            
+            # Update session state
+            current_selection = list(st.session_state['protein_selector'])
+            updated_selection = list(set(current_selection + valid_proteins))
+            
+            st.session_state['protein_selector'] = updated_selection
+            
+            if len(valid_proteins) < len(input_list):
+                missing = set(input_list) - set(valid_proteins)
+                st.warning(f"Populated {len(valid_proteins)} proteins. Ignored {len(missing)} unknown IDs.")
+            else:
+                st.success(f"Added {len(valid_proteins)} proteins!")
+
+
+# Initialize the session state key if it doesn't exist
+if 'selected_proteins' not in st.session_state:
+    st.session_state['selected_proteins'] = []
+
+
 protein_list = st.multiselect(
-    'Proteins to view (Tip: Filter for tissues / cell-lines first to make this run faster!)',
-     abundance.index, placeholder='Add proteins to view')
+    'Proteins to view',
+    options=abundance.index,
+    default=st.session_state['selected_proteins'], # This links it to your button
+    key='protein_selector', # Giving it a unique key
+    placeholder='Add proteins to view'
+)
+
+st.session_state['selected_proteins'] = protein_list
+
+
 
 if protein_list:
     tab1, tab2, tab3 = st.tabs(["abundance", "expression", "mutation"])
