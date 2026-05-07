@@ -4,11 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(
-    page_title="SimKO - Filter data",
-    page_icon="🥼",
-    layout="wide"
-)
+
 
 @st.cache_data
 def get_abundance_data():

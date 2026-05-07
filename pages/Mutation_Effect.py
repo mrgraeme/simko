@@ -5,11 +5,7 @@ from scipy.stats import t
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(
-    page_title="SimKO - Mutation Effect",
-    page_icon="🥼",
-    layout="wide"
-)
+
 @st.cache_data
 def get_abundance_data():
     abundance = pd.read_csv('./data/abundance.csv')
@@ -120,7 +116,7 @@ cmap = plt.cm.get_cmap('RdYlBu_r')
 cls = list(abundance.columns)
 tissues = set([str(i.split('_', 1)[1:][0]) for i in abundance.columns])
 
-st.write("### Simulate protein KO data! 🥼")
+st.write("### Explore Mutation Effects! 👾")
 
 protein_list = st.multiselect(
     'Proteins for KO',
