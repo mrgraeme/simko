@@ -29,6 +29,9 @@ pages = {
         st.Page("pages/Expression_Effect.py", title="Expression Effect", icon="🫶"),
         st.Page("pages/Mutation_Effect.py", title="Mutation Effect", icon="👾"),
     ],
+    "Documentation": [    
+        st.Page("pages/Documentation.py", title="Documentation", icon="👓"),
+    ],
     # "Analysis": [
     #     st.Page(
     #         "pages/Functional_Categories.py",
