@@ -27,7 +27,7 @@ pages = {
         st.Page("views/Configuration.py", title="Global Settings", icon="⚙️"),
     ],
     "Data Exploration": [
-        st.Page("views/Filter_data.py", title="Filter Data", icon="🔬"),
+        st.Page("views/Filter_Data.py", title="Filter Data", icon="🔬"),
     ],
     "Effect Analysis": [
         st.Page("views/Simulated_KO_Effect.py", title="Abundance Effects", icon="🧁"),
