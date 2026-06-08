@@ -20,28 +20,25 @@ st.set_page_config(
 
 
 
+# Inside your SimKO.py file:
+
 pages = {
-    "Filter Data": [
-        st.Page("pages/Filter_Data.py", title="Filter Data", icon="🔬"),
+    "Setup": [
+        st.Page("views/Configuration.py", title="Global Settings", icon="⚙️"),
+    ],
+    "Data Exploration": [
+        st.Page("views/Filter_data.py", title="Filter Data", icon="🔬"),
     ],
     "Effect Analysis": [
-        st.Page("pages/Simulated_KO_Effect.py", title="Abundance Effects", icon="🧁"),
-        st.Page("pages/Expression_Effect.py", title="Expression Effect", icon="🫶"),
-        st.Page("pages/Mutation_Effect.py", title="Mutation Effect", icon="👾"),
+        st.Page("views/Simulated_KO_Effect.py", title="Abundance Effects", icon="🧁"),
+        st.Page("views/Expression_Effect.py", title="Expression Effect", icon="🫶"),
+        st.Page("views/Mutation_Effect.py", title="Mutation Effect", icon="👾"),
     ],
     "Documentation": [    
-        st.Page("pages/Documentation.py", title="Documentation", icon="👓"),
+        st.Page("views/Documentation.py", title="Documentation", icon="👓"),
     ],
-    # "Analysis": [
-    #     st.Page(
-    #         "pages/Functional_Categories.py",
-    #         title="Functional Categories",
-    #         icon="📊"
-    #     ),
-    # ],
 }
 
-# Create the navigation menu
 pg = st.navigation(pages)
 pg.run()
 
