@@ -14,11 +14,11 @@ SimKO integrates mass-spectrometry-based proteomics data alongside matched multi
 
 ## Multi-Omic Core Architecture 🧬
 
-To facilitate high-throughput phenotypic triangulation, **SimKO** combines quantitative deep-proteomics matrices with tightly matched transcriptomic, genomic, and functional screening datasets spanning the same cellular backgrounds.
+To facilitate high-throughput phenotypic triangulation, **SimKO** combines quantitative deep-proteomics matrices with tightly matched transcriptomic and genomic datasets spanning the same cellular backgrounds.
 
 ### Data Sources & Citations
 
-The baseline multi-omic environments mapped across this platform are compiled from four landmark multi-center research efforts:
+The baseline molecular environments mapped across this platform are compiled from three landmark research efforts:
 
 1. **Mass Spectrometry Proteomics (The Input Layer):**
    > Nusinow, D. P., Szpyt, J., Ghandi, M., Rose, C. M., McDonald, E. R., 3rd, Kalocsay, M., Jané-Valbuena, J., Gelfand, E., Schweppe, D. K., Jedrychowski, M., Golji, J., Porter, D. A., Rejtar, T., Wang, Y. K., Kryukov, G. V., Stegmeier, F., Erickson, B. K., Garraway, L. A., Sellers, W. R., & Gygi, S. P. (2020). Quantitative Proteomics of the Cancer Cell Line Encyclopedia. *Cell*, *180*(2), 387–402.e16. https://doi.org/10.1016/j.cell.2019.12.023
@@ -28,9 +28,6 @@ The baseline multi-omic environments mapped across this platform are compiled fr
 
 3. **Foundational Cancer Cell Line Encyclopedia Framework:**
    > Barretina, J., Caponigro, G., Stransky, N., Venkatesan, K., Margolin, A. A., Kim, S., Wilson, C. J., Lehár, J., Kryukov, G. V., Sonkin, D., Reddy, A., Liu, M., Murray, L., Berger, M. F., Monahan, J. E., Morais, P., Meltzer, J., Korejwa, A., Jané-Valbuena, J., Mapa, F. A., Thibault, J., Bric-Furlong, E., Raman, P., Shipway, A., & Engels, I. H. (2012). The Cancer Cell Line Encyclopedia enables predictive modelling of anticancer drug sensitivity. *Nature*, *483*(7391), 603–607. https://doi.org/10.1038/nature11003
-
-4. **Genome-Scale CRISPR-Cas9 Knockout Functional Screening:**
-   > Pacini, C., Dempster, J. M., Boyle, I., Gonçalves, E., Najgebauer, H., Karakoc, E., Meer, D. v. d., Barthorpe, A., Lightfoot, H., Jaaks, P., McFarland, J. M., Garnett, M. J., Tsherniak, A., & Iorio, F. (2020). Integrated cross-study datasets of genetic dependencies in cancer. *bioRxiv*. https://doi.org/10.1101/2020.05.22.110247
 
 ---
 
@@ -49,10 +46,6 @@ Baseline steady-state transcriptional abundance tracks are established via bulk 
 The functional presence or absence of mutational variants across coding domains is mapped utilizing Whole Exome Sequencing (WES), Whole Genome Sequencing (WGS), and verified RNA-Seq pipelines (Ghandi et al., 2019).
 - **Quantification Metric:** Values are isolated as **binary mutation metrics** ($0 = \text{Wild-Type / Inactive}$, $1 = \text{Mutated / Somatic variant verified}$). Germline artifacts and highly frequent public polymorphisms have been filtered out using common reference repositories (gnomAD/ExAC).
 
-#### 4. Loss-of-Function Cell Viability Metrics (CRISPR Dependency)
-Functional survival dependencies are modeled from pooled pan-cancer genome-scale CRISPR-Cas9 drop-out screens generated via Project Achilles (Pacini et al., 2020).
-- **Quantification Metric:** Provided as **Chronos Dependency Scores**. A value of **$0.0$** indicates a non-essential gene role (knocking it out triggers no proliferative survival penalty compared to baseline controls), whereas a score of **$-1.0$** matches the median death/growth-arrest curve of known core pan-essential housekeeping genes.
-
 ---
 
 ### Data Pre-processing & Matrix Alignment
@@ -67,7 +60,7 @@ Before integration within the **SimKO** engine, raw data frames underwent struct
 
 ### Analytical Data Assumptions
 
-- **Normal Approximations:** Proteomic log-intensities, RNA expression logs, and Chronos dependency scores are evaluated as continuous, approximately normally distributed datasets. This assumption is justified by the log2-transformed, pre-adjusted normalizations established in the primary literature (Ghandi et al., 2019; Nusinow et al., 2020).
+- **Normal Approximations:** Proteomic log-intensities and RNA expression logs are evaluated as continuous, approximately normally distributed datasets. This assumption is justified by the log2-transformed, pre-adjusted normalizations established in the primary literature (Ghandi et al., 2019; Nusinow et al., 2020).
 - **Summed Genotypic Counts:** Somatic mutation indices are analyzed via absolute summary counts ($\sum$) within targeted cohorts rather than averages, reflecting a simple binary model burden.
 - **RNA–Protein Disconnect:** RNA–protein correlation averages $\sim$0.5 across the proteome, meaning the proteomic layer captures substantial post-transcriptional regulation not visible in raw transcript data.
 
@@ -106,7 +99,7 @@ Using the **median group as the reference baseline** is an intentional architect
 
 For each data type, the platform compares molecular behavior between the partitioned groups:
 
-#### 1. Continuous Features (Abundance, Expression, and Dependency Matrices)
+#### 1. Continuous Features (Abundance and Expression Matrices)
 Group means and standard deviations are computed across all background features. An independent **two-sample Student's t-test** (assuming pooled variance, two-tailed) is performed using the formula:
 
 $$t = \frac{\bar{X}_1 - \bar{X}_2}{s_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}$$
@@ -162,5 +155,5 @@ numpy
 scipy
 matplotlib
 seaborn
-
+            
 """)
