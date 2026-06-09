@@ -12,7 +12,7 @@ SimKO integrates mass-spectrometry-based proteomics data alongside matched multi
 
 ---
 
-## Multi-Omic Core Architecture 🧬
+## Multi-Omic Core Architecture
 
 To facilitate high-throughput phenotypic triangulation, **SimKO** combines quantitative deep-proteomics matrices with tightly matched transcriptomic and genomic datasets spanning the same cellular backgrounds.
 
