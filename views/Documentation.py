@@ -99,7 +99,7 @@ Using the **median group as the reference baseline** is an intentional architect
 
 For each data type, the platform compares molecular behavior between the partitioned groups:
 
-#### 1. Continuous Features (Abundance and Expression Matrices)
+#### Continuous Features (Abundance and Expression Matrices)
 Group means and standard deviations are computed across all background features. An independent **two-sample Student's t-test** (assuming pooled variance, two-tailed) is performed using the formula:
 
 $$t = \frac{\bar{X}_1 - \bar{X}_2}{s_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}$$
@@ -110,7 +110,7 @@ $$s_p = \sqrt{\frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}}$$
 
 The resulting $p$-value determines whether a downstream feature's metric varies significantly between the partitioned cohorts. Features showing $p < 0.01$ (or $p < 0.05$ on the Mutation layout) are prioritized as significantly altered tracking candidates.
 
-#### 2. Binary Features (Mutation Matrix)
+#### Binary Features (Mutation Matrix)
 Somatic variant counts are aggregated as raw absolute sums inside each comparative cohort. The reported differential is calculated as:
 
 $$\Delta_{\text{Mutation}} = \sum \text{Mutated Cohort} - \sum \text{Non-Mutated Cohort}$$
@@ -121,16 +121,16 @@ No significance testing is applied directly to mutation counts.
 
 ## Using the Tool
 
-### 1. Global Settings
+### Global Settings
 Configure parameters globally on the **Global Settings** tab. Use the multi-select inputs to determine your simulation target (**Proteins for KO**), restrict tracking to specific lineages (**Tissue Filter / Cell Line Filter**), and populate down-stream inspection features (**Selected Protein List**). The Quick Paste panel allows you to paste newline or comma-separated lists directly into the state.
 
-### 2. Multi-Omic Filtering
+### Multi-Omic Filtering
 The **Filter Data** page acts as a structured matrix inspector for the items you specified in your focus tracking lists, breaking down relative values instantly across Abundance, Expression, and Mutation tabs.
 
-### 3. Visualizing Effects
+### Visualizing Effects
 Navigate through the **Abundance**, **Expression**, or **Mutation** effect pages to look at global outputs. The app renders a clustering heatmap representing target groupings, a cumulative multi-gene boxplot, a comprehensive downstream multi-omic differential table, and dynamic outlier tracking sliders.
 
-### 4. Downloading Results
+### Downloading Results
 Data exports are directly accessible via the download buttons embedded across individual application tabs:
 - **Download All Abundance Foldchange:** Pulls down the completed differential results, tracking values, fold changes, and $p$-values.
 - **Download All Abundance:** Pulls down the raw abundance matrix filtered specifically to the active classified cell line cohorts.
