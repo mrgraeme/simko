@@ -1,221 +1,164 @@
 import streamlit as st
 
+st.title("SimKO Documentation 👓")
+
 st.markdown("""
-## SimKO Documentation 👓
 
 ## Overview
 
-This tool is an interactive Streamlit application for exploring the downstream effects of simulated protein knockouts (KO) using proteomics data from the **Gygi Lab**. 
-By selecting one or more proteins of interest, the tool identifies cell lines with low versus median protein abundance and tests which other proteins change significantly between those groups — providing a proxy for the consequences of depleting a given protein.
+This tool is an interactive Streamlit application for exploring the downstream molecular effects of simulated protein knockouts (KO). By selecting one or more proteins of interest, the tool partitions cancer cell line cohorts based on natural biological variation—identifying models with low versus median baseline metrics—and tests which downstream molecules change significantly between those groups. 
+
+SimKO integrates mass-spectrometry-based proteomics data alongside matched multi-omic datasets to provide a high-throughput proxy for the systemic consequences of depleting or mutating a given target.
 
 ---
 
-## Data
+## Multi-Omic Core Architecture 🧬
 
-### Source and Citation
+To facilitate high-throughput phenotypic triangulation, **SimKO** combines quantitative deep-proteomics matrices with tightly matched transcriptomic, genomic, and functional screening datasets spanning the same cellular backgrounds.
 
-Proteomics abundance data was sourced via:
+### Data Sources & Citations
 
-> Nusinow DP, Szpyt J, Ghandi M, Rose CM, McDonald ER 3rd, Kalocsay M, Jané-Valbuena J, Gelfand E, Schweppe DK, Jedrychowski M, Golji J, Porter DA, Rejtar T, Wang YK, Kryukov GV, Stegmeier F, Erickson BK, Garraway LA, Sellers WR, Gygi SP. **Quantitative Proteomics of the Cancer Cell Line Encyclopedia.** *Cell.* 2020 Jan 23;180(2):387-402.e16. doi: [10.1016/j.cell.2019.12.023](https://doi.org/10.1016/j.cell.2019.12.023)
+The baseline multi-omic environments mapped across this platform are compiled from four landmark multi-center research efforts:
 
-The dataset was produced by the **Gygi Lab at Harvard Medical School** in collaboration with the Broad Institute. Normalised data files are freely available via the [Gygi Lab website](https://gygi.hms.harvard.edu/publications/ccle.html) and deposited in the [MassIVE repository](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=02cd1b6a7c674f3ebdbed300b5d9aa57).
+1. **Mass Spectrometry Proteomics (The Input Layer):**
+   > Nusinow, D. P., Szpyt, J., Ghandi, M., Rose, C. M., McDonald, E. R., 3rd, Kalocsay, M., Jané-Valbuena, J., Gelfand, E., Schweppe, D. K., Jedrychowski, M., Golji, J., Porter, D. A., Rejtar, T., Wang, Y. K., Kryukov, G. V., Stegmeier, F., Erickson, B. K., Garraway, L. A., Sellers, W. R., & Gygi, S. P. (2020). Quantitative Proteomics of the Cancer Cell Line Encyclopedia. *Cell*, *180*(2), 387–402.e16. https://doi.org/10.1016/j.cell.2019.12.023
 
-### Experimental Design
+2. **Next-Generation Sequencing Transcriptomics and Genomics (The Baseline Layer):**
+   > Ghandi, M., Huang, F. W., Jané-Valbuena, J., Kryukov, G. V., Gopal, S., Deik, A., Souza, A., Pierce, K., Keskula, P., Hernandez, D., Ann, J., Shkoza, D., Apfel, V., Zou, Y., Vazquez, F., Barretina, J., Pagliarini, R. A., Galli, G. G., Root, David E., Hahn, William C., Tsherniak, A., Giannakis, M., Schreiber, S. L., Clish, C. B., & Garraway, L. A. (2019). Next-generation characterization of the Cancer Cell Line Encyclopedia. *Nature*, *569*(7757), 503–508. https://doi.org/10.1038/s41586-019-1186-3
 
-#### Mass Spectrometry Approach
+3. **Foundational Cancer Cell Line Encyclopedia Framework:**
+   > Barretina, J., Caponigro, G., Stransky, N., Venkatesan, K., Margolin, A. A., Kim, S., Wilson, C. J., Lehár, J., Kryukov, G. V., Sonkin, D., Reddy, A., Liu, M., Murray, L., Berger, M. F., Monahan, J. E., Morais, P., Meltzer, J., Korejwa, A., Jané-Valbuena, J., Mapa, F. A., Thibault, J., Bric-Furlong, E., Raman, P., Shipway, A., & Engels, I. H. (2012). The Cancer Cell Line Encyclopedia enables predictive modelling of anticancer drug sensitivity. *Nature*, *483*(7391), 603–607. https://doi.org/10.1038/nature11003
 
-Protein abundance was measured using **Tandem Mass Tag (TMT) multiplex mass spectrometry**, to allow relative quantification of proteins across multiple samples simultaneously:
-
-- Cell lines were processed in **10-plex format**: 9 biological samples per run, plus one common reference sample used to normalise between runs.
-- A total of **42 multiplex experiments** were performed, comprising **504 individual mass spectrometer runs** and over 1,500 hours of instrument time.
-- On average, **over 9,000 proteins** were quantified per experiment.
-- The first two multiplex experiments included **biological triplicates** to assess reproducibility.
-
-Protein identification used a **UniProt database search**, and protein identifiers in the dataset follow UniProt annotations.
-
-#### Normalisation
-
-1. Within each 10-plex run, samples are normalised to the common reference channel to generate relative abundance values.
-2. Cross-run normalisation is applied to make values comparable across all 42 experiments.
-3. The resulting values are provided as **log2-transformed normalised protein quantities**, where positive values indicate higher-than-reference abundance and negative values indicate lower-than-reference abundance.
-
-A detailed guide to the normalisation procedure is available in the companion preprint: [Nusinow & Gygi, 2020 (bioRxiv)](https://www.biorxiv.org/content/10.1101/2020.02.03.932384v1).
-            
-### Pre-processing of the Abundance Matrix
-
-The following steps were applied to the raw Nusinow et al. normalised protein quantitation table before loading into the tool:
-
-1. **Sparse protein filtering** — any protein row with valid (non-missing) values in fewer than 50% of cell lines was removed. This avoids unreliable group statistics for proteins detected in only a minority of the panel.
-
-2. **Mean imputation** — for proteins passing the coverage filter, remaining missing values were imputed with the **mean abundance of that protein across all cell lines**. This is a conservative imputation strategy that pulls missing values toward the centre of the distribution, minimising their influence on differential analysis while avoiding the data loss of complete-case analysis.
-
-> As such all proteins in the loaded abundance matrix have full coverage across cell lines, and no missing value handling is performed at runtime by the app itself.
-
-
-#### Key Characteristics of the Dataset
-
-- **375 cancer cell lines** across 22 lineages including lung, breast, colorectal, haematopoietic, and others.
-- **~12,000 unique proteins** quantified across the full dataset (coverage varies per cell line).
-- **Missing values** are present — not all proteins are detected in every cell line; the published normalised matrix retains these as blanks/NaN.
-- **RNA–protein correlation** averages ~0.5 across proteins, meaning the proteome captures substantial post-transcriptional regulation not visible in RNA data.
+4. **Genome-Scale CRISPR-Cas9 Knockout Functional Screening:**
+   > Pacini, C., Dempster, J. M., Boyle, I., Gonçalves, E., Najgebauer, H., Karakoc, E., Meer, D. v. d., Barthorpe, A., Lightfoot, H., Jaaks, P., McFarland, J. M., Garnett, M. J., Tsherniak, A., & Iorio, F. (2020). Integrated cross-study datasets of genetic dependencies in cancer. *bioRxiv*. https://doi.org/10.1101/2020.05.22.110247
 
 ---
 
-### Data Assumptions
+### Experimental Design & Metrics
 
-- Abundance and expression values are treated as **continuous, approximately normally distributed** measurements, which is appropriate given the log2-transformed normalised values provided by the dataset.
-- Mean imputation of missing abundance values is appropriate for the t-test approach used here, though imputed values will slightly compress variance estimates for proteins that required substantial imputation. Proteins near the 50% missingness threshold should be interpreted with additional caution.
-- Mutation values are treated as **binary counts** (mutated / not mutated) and are summed rather than averaged when comparing groups.
+#### 1. Quantitative Mass Spectrometry Proteomics Matrix
+Protein abundance is resolved utilizing high-resolution **Tandem Mass Tag (TMT) 10-plex multiplex mass spectrometry** (Nusinow et al., 2020).
+- **Throughput:** Comprises 42 multiplex experiments running 504 individual mass spectrometer allocations mapping **375 human cancer cell line models** derived from 22 distinct tissue frameworks. On average, over 9,000 proteins were quantified per experiment.
+- **Quantification Metric:** Quantities are supplied as **$\log_2$-transformed, normalized relative intensities**. Positive values signify relative enrichment over the multiplex master reference channel pool, whereas negative values point to relative depletion against the baseline reference channel used to normalize between runs.
+
+#### 2. Transcriptomic Sequencing Matrix (RNA Expression)
+Baseline steady-state transcriptional abundance tracks are established via bulk RNA-Sequencing generated by the Broad Institute CCLE platform (Barretina et al., 2012; Ghandi et al., 2019).
+- **Quantification Metric:** Expressed as **$\log_2(\text{TPM} + 1)$** (Transcripts Per Million, with a standard absolute pseudo-count offset of 1 to handle undefined zero values during log transformation).
+
+#### 3. Somatic Variant Coding Selection (Mutation Calls)
+The functional presence or absence of mutational variants across coding domains is mapped utilizing Whole Exome Sequencing (WES), Whole Genome Sequencing (WGS), and verified RNA-Seq pipelines (Ghandi et al., 2019).
+- **Quantification Metric:** Values are isolated as **binary mutation metrics** ($0 = \text{Wild-Type / Inactive}$, $1 = \text{Mutated / Somatic variant verified}$). Germline artifacts and highly frequent public polymorphisms have been filtered out using common reference repositories (gnomAD/ExAC).
+
+#### 4. Loss-of-Function Cell Viability Metrics (CRISPR Dependency)
+Functional survival dependencies are modeled from pooled pan-cancer genome-scale CRISPR-Cas9 drop-out screens generated via Project Achilles (Pacini et al., 2020).
+- **Quantification Metric:** Provided as **Chronos Dependency Scores**. A value of **$0.0$** indicates a non-essential gene role (knocking it out triggers no proliferative survival penalty compared to baseline controls), whereas a score of **$-1.0$** matches the median death/growth-arrest curve of known core pan-essential housekeeping genes.
+
+---
+
+### Data Pre-processing & Matrix Alignment
+
+Before integration within the **SimKO** engine, raw data frames underwent structural filtering steps to maintain statistical integrity:
+
+1. **Sparse Protein Filtering:** Any proteomic feature demonstrating unassigned values across more than 50% of the aggregate cell lines was completely dropped. This avoids unreliable group statistics for proteins detected in only a minority of the panel.
+2. **Conservative Cross-Line Imputation:** Missing values in rows passing the 50% detection threshold were imputed using the **global mean value of that protein across all cell lines**. This aligns missing data with the center of the vector, compressing structural noise and minimizing their influence on differential analysis while avoiding data loss.
+3. **Cohort Co-indexing:** All loaded matrices were co-indexed along identical cell line designators, matching tissue metadata origins. Because imputation and filtering occur prior to loading, all calculation streams operate on a standardized multi-omic data frame at runtime with full coverage across cell lines.
+
+---
+
+### Analytical Data Assumptions
+
+- **Normal Approximations:** Proteomic log-intensities, RNA expression logs, and Chronos dependency scores are evaluated as continuous, approximately normally distributed datasets. This assumption is justified by the log2-transformed, pre-adjusted normalizations established in the primary literature (Ghandi et al., 2019; Nusinow et al., 2020).
+- **Summed Genotypic Counts:** Somatic mutation indices are analyzed via absolute summary counts ($\sum$) within targeted cohorts rather than averages, reflecting a simple binary model burden.
+- **RNA–Protein Disconnect:** RNA–protein correlation averages $\sim$0.5 across the proteome, meaning the proteomic layer captures substantial post-transcriptional regulation not visible in raw transcript data.
 
 ---
 
 ## Suitability of the Data for This Tool
 
-The Nusinow et al. dataset is well-suited to the type of analysis this tool performs, with some important caveats worth noting.
+The integrated dataset is exceptionally well-suited to the type of analysis this tool performs, with some important caveats worth noting.
 
-**Breadth of coverage.** With 375 cell lines across 22 tissue types and ~9,000+ proteins per experiment, there is sufficient statistical power to meaningfully compare groups of 20 cell lines and detect differential protein abundance.
+**Breadth of coverage.** With 375 cell lines across 22 tissue types and $\sim$9,000+ proteins per experiment, there is sufficient statistical power to meaningfully compare groups of 20 cell lines and detect differential molecular changes.
 
-**Quantitative, normalised values.** The log2-normalised TMT values are designed for exactly this kind of between-sample comparison. The normalisation strategy corrects for run-to-run technical variation, making abundance differences interpretable as biological signal rather than measurement artefact.
-
-**Matched multi-omic data.** Because the cell lines belong to the CCLE, matched RNA expression and mutation data are available for the same samples. This allows the tool to go beyond protein abundance and ask whether genes that change at the protein level also show concordant changes in RNA or mutation burden — a meaningful triangulation.
-
-**Natural variation as a proxy for depletion.** The tool leverages the fact that protein abundance varies naturally across cell lines due to differences in gene expression, copy number, mutation, and post-transcriptional regulation. Cell lines at the low end of abundance for a given protein serve as a natural model for its partial depletion, which is a widely used approach in correlative proteomics analysis.
-
-## Important Caveats
-
-**This is not a true knockout experiment.** The low-abundance cell lines were not experimentally manipulated. Their low protein levels reflect the full complexity of their cancer biology — including co-occurring mutations, lineage effects, and other confounders. Any protein that co-varies with your protein of interest may do so for reasons unrelated to a functional dependency.
-
-**Tissue type is a dominant source of variation.** The original paper noted a striking separation between haematopoietic/lymphoid lineages and solid organ lineages at the proteome level. Running the analysis across all tissue types simultaneously risks confounding functional signal with lineage effects. The tissue filter in the tool is strongly recommended when working with proteins of known tissue-specific biology.
-
-**RNA–protein correlation is imperfect (~0.5 on average).** A key finding of Nusinow et al. is that protein and RNA abundances are only moderately correlated, particularly for members of protein complexes. This is actually a strength of using proteomics data — it captures regulation invisible to RNA — but it means that RNA expression changes seen in the tool should be interpreted as complementary evidence rather than a confirmation of the protein-level findings.
-
-**Mean imputation introduces a subtle bias.** Missing values in the abundance matrix were imputed with each protein's cross-cell-line mean prior to loading. This means imputed values contribute no variance of their own — they pull group means toward the global average and slightly deflate standard deviations, which can modestly inflate t-statistics for proteins that required heavy imputation. Proteins that were close to the 50% missingness threshold (and therefore retained with a meaningful proportion of imputed values) deserve additional scrutiny in the results.
-
-**No multiple testing correction.** See the Limitations section below.
+**Natural variation as a proxy for depletion.** The tool leverages the fact that molecular abundance varies naturally across cell lines due to differences in gene expression, copy number, mutation, and post-transcriptional regulation. Cell lines at the low end of abundance for a given protein serve as a natural model for its partial depletion, which is a widely used approach in correlative analysis.
 
 ---
 
-## Methodology
+## Methodological Pipeline
 
-### Step 1 — Classifying Cell Lines by Protein Abundance
+### Step 1 — Cohort Partitioning and Classification
 
-For the selected protein(s), the tool:
+For a selected protein target, the tool sorts cell lines (optionally restricted by tissue type) and partitions them into distinct analytical classes based on the chosen multi-omic view:
 
-1. Extracts the abundance values across all cell lines (optionally filtered by tissue type).
-2. Calculates the **mean abundance** of the selected protein(s) across each cell line.
-3. Sorts cell lines by this mean value and assigns them to two classes:
+| Tab / Analysis View | Target Basis | Cohort 1 Group | Cohort 2 Group |
+|---|---|---|---|
+| **Abundance Effects** | Proteomics Mean | **Low Abundance:** Bottom $n$ cell lines | **Median Abundance:** Middle $n$ baseline lines |
+| **Expression Effects** | $\log_2(\text{TPM}+1)$ Mean | **Low Expression:** Bottom $n$ cell lines | **Median Expression:** Middle $n$ baseline lines |
+| **Mutation Effects** | Somatic Alteration | **Mutated:** $\ge 1$ non-synonymous variant | **Non-Mutated:** Wild-Type (WT) copies |
 
-| Class | Definition |
-|---|---|
-| **Median** | The `n` cell lines closest to the middle of the distribution |
-| **Low** | The `n` cell lines with the lowest abundance |
+#### Determining Class Size ($n$):
+For continuous distributions (Abundance and Expression views), the cohort size ($n$) scales dynamically based on sample size to maximize statistical constraints:
+- If fewer than 60 total cell lines match the selected tissue filters: $n = (\text{total\_cell\_lines} - 1) // 3$
+- If 60 or more cell lines are available in the panel: $n = 20$
 
-The number of cell lines per class (`n`) is set automatically:
-- If fewer than 60 cell lines are available: `n = (total_cell_lines - 1) // 3`
-- Otherwise: `n = 20`
+Using the **median group as the reference baseline** is an intentional architectural choice. It avoids the confounding effects of "high vs low" extreme comparisons, which frequently pick up generalized stress or hyper-proliferation phenotypes rather than specific target biology. The median group acts as a standard biological baseline.
 
-This design is intentional — the **median group acts as a baseline**, avoiding the confounding effects that a "high vs low" comparison can introduce (e.g. comparing extremes may capture unrelated biology). Using median expressors as the reference group provides a more conservative and interpretable comparison.
+### Step 2 — Differential Statistical Calculations
 
-### Step 2 — Differential Analysis
+For each data type, the platform compares molecular behavior between the partitioned groups:
 
-For each of the three data types (abundance, expression, mutation), the tool computes differences between the **low** and **median** groups:
+#### 1. Continuous Features (Abundance, Expression, and Dependency Matrices)
+Group means and standard deviations are computed across all background features. An independent **two-sample Student's t-test** (assuming pooled variance, two-tailed) is performed using the formula:
 
-**Abundance and Expression (continuous data):**
+$$t = \frac{\bar{X}_1 - \bar{X}_2}{s_p \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}$$
 
-- Group means and standard deviations are calculated for each protein.
-- A **two-sample t-test** (pooled variance, two-tailed) is performed using the formula:
+Where $s_p$ represents the pooled standard deviation across both comparative sample frames:
 
-$$t = \frac{\bar{x}_{low} - \bar{x}_{median}}{s_p \sqrt{\frac{1}{n} + \frac{1}{n}}}$$
+$$s_p = \sqrt{\frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}}$$
 
-where $s_p$ is the pooled standard deviation and degrees of freedom = $2n - 2$.
+The resulting $p$-value determines whether a downstream feature's metric varies significantly between the partitioned cohorts. Features showing $p < 0.01$ (or $p < 0.05$ on the Mutation layout) are prioritized as significantly altered tracking candidates.
 
-- The resulting **p-value** indicates whether the abundance/expression of a given protein differs significantly between the low and median cell line groups.
-- Results are sorted by **fold change** (low − median), with the most depleted proteins at the top.
+#### 2. Binary Features (Mutation Matrix)
+Somatic variant counts are aggregated as raw absolute sums inside each comparative cohort. The reported differential is calculated as:
 
-**Mutation (binary data):**
+$$\Delta_{\text{Mutation}} = \sum \text{Mutated Cohort} - \sum \text{Non-Mutated Cohort}$$
 
-- Mutation counts are **summed** within each group rather than averaged.
-- The **difference in mutation counts** (low − median) is reported. No significance test is applied to mutation data.
-
-### Step 3 — Reporting
-
-The tool reports:
-
-- A **heatmap** of the mean abundance of selected proteins across the classified cell lines.
-- A **boxplot** of abundance/expression values split by class (low vs median) for proteins of interest.
-- A **summary table** combining abundance, expression, and mutation differentials for selected proteins.
-- A ranked list of **top differentially abundant proteins** (filtered to p < 0.01) — those most affected in cell lines where your protein of interest is depleted.
+No significance testing is applied directly to mutation counts.
 
 ---
 
 ## Using the Tool
 
-### 1. Select Proteins for Simulated KO
+### 1. Global Settings
+Configure parameters globally on the **Global Settings** tab. Use the multi-select inputs to determine your simulation target (**Proteins for KO**), restrict tracking to specific lineages (**Tissue Filter / Cell Line Filter**), and populate down-stream inspection features (**Selected Protein List**). The Quick Paste panel allows you to paste newline or comma-separated lists directly into the state.
 
-Use the **"Proteins for KO"** multiselect to choose one or more proteins. The tool will classify cell lines based on the mean abundance of all selected proteins combined.
+### 2. Multi-Omic Filtering
+The **Filter Data** page acts as a structured matrix inspector for the items you specified in your focus tracking lists, breaking down relative values instantly across Abundance, Expression, and Mutation tabs.
 
-### 2. Filter by Tissue (Optional)
+### 3. Visualizing Effects
+Navigate through the **Abundance**, **Expression**, or **Mutation** effect pages to look at global outputs. The app renders a clustering heatmap representing target groupings, a cumulative multi-gene boxplot, a comprehensive downstream multi-omic differential table, and dynamic outlier tracking sliders.
 
-Use **"Filter for Tissue"** to restrict the analysis to specific tissue types. This is useful when you want to avoid mixing tissue-specific biology and focus on a more homogeneous cell line panel.
-
-### 3. Explore the Cell Line Classification
-
-The heatmap tab shows how the classified cell lines (median vs low) compare in mean abundance. Use the **"Figure Values"** tab to inspect the raw values.
-
-### 4. Investigate Additional Proteins
-
-Use **"Select additional proteins differences to view"** to add proteins of interest to the summary boxplot and table — for example, known interactors, pathway members, or candidates you want to check manually.
-
-### 5. Explore Top Differentially Abundant Proteins
-
-Adjust the **"Number of proteins by median differential"** slider to control how many top-ranked proteins (by fold change, filtered to p < 0.01) are shown in the results table.
-
-### 6. Download Results
-
-Two download buttons are available:
-
-- **Download All Abundance Foldchange** — full differential abundance table for all proteins, with mean values, fold change, and p-values.
-- **Download All Abundance** — the raw abundance matrix restricted to the classified cell lines, sorted by fold change.
-
-File names are automatically tagged with the selected protein names.
+### 4. Downloading Results
+Data exports are directly accessible via the download buttons embedded across individual application tabs:
+- **Download All Abundance Foldchange:** Pulls down the completed differential results, tracking values, fold changes, and $p$-values.
+- **Download All Abundance:** Pulls down the raw abundance matrix filtered specifically to the active classified cell line cohorts.
 
 ---
 
-## Interpreting Results
+## Important Caveats & Limitations
 
-| Column | Meaning |
-|---|---|
-| `median` | Mean abundance/expression in the median cell line group |
-| `low` | Mean abundance/expression in the low cell line group |
-| `diff` | Difference (low − median); negative = depleted in low group |
-| `p` | Two-tailed t-test p-value; values < 0.01 are highlighted in downstream tables |
-| `Mutation - diff` | Difference in mutation count between groups (not a statistical test) |
-
-A **negative `diff`** for a protein means it tends to be lower in abundance in the cell lines where your KO protein is also low — suggestive of co-dependency or co-regulation. A **positive `diff`** suggests the protein is relatively higher in those cell lines, which could indicate compensatory upregulation.
+1. **Correlation vs Causality:** This application leverages natural baseline variation as a correlative proxy for depletion. Cell lines have not been experimentally manipulated; their low protein or expression values reflect complex, un-engineered cancer biology, including co-occurring copy number alterations, structural passenger events, and long-term adaptation lines.
+2. **Lineage Confounding:** Tissue type is a dominant driver of molecular variation. Proteomic and transcriptomic profiles split dramatically between haematopoietic/lymphoid lineages and solid organ backgrounds. Utilizing the built-in **Tissue Filter** is strongly recommended when dealing with lineage-specific pathways to avoid artifact signals.
+3. **Imputation Compression:** Because missing values in the proteomics matrix were imputed using cross-cell-line means, features that required heavy imputation will exhibit compressed standard deviations. This can modestly inflate $t$-statistics; proteins that were near the 50% missingness threshold deserve additional scrutiny.
+4. **Multiple Testing Correction:** No alpha adjustment (e.g., Benjamini-Hochberg FDR) is automatically applied to runtime $p$-values. Given that thousands of features are computed simultaneously, a raw cutoff of $p < 0.01$ will generate false positives. Treat findings as strong, hypothesis-generating candidates.
 
 ---
 
-## Limitations and Caveats
+## Core Dependencies
 
-- This analysis is **correlational**, not causal. Classifying cell lines by natural abundance variation is not equivalent to a controlled genetic knockout experiment.
-- The **median group as baseline** is a pragmatic choice; it reduces but does not eliminate the risk of comparing against a biologically extreme group.
-- **No multiple testing correction** is currently applied to p-values. With many proteins tested simultaneously, a threshold of p < 0.01 will still produce false positives. Treat results as hypothesis-generating rather than definitive.
-- Results may vary depending on the **tissue filter** applied, as tissue type is a major source of biological variation in proteomics data.
-- Mutation data is reported as raw count differences and **no statistical test** is applied; interpret with caution.
-
----
-
-## Dependencies
-
-```
+```text
 streamlit
 pandas
 numpy
 scipy
 matplotlib
 seaborn
-```
-
----
-            
-""")
