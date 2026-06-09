@@ -52,9 +52,9 @@ The functional presence or absence of mutational variants across coding domains 
 
 Before integration within the **SimKO** engine, raw data frames underwent structural filtering steps to maintain statistical integrity:
 
-**Sparse Protein Filtering:** Any proteomic feature demonstrating unassigned values across more than 50% of the aggregate cell lines was completely dropped. This avoids unreliable group statistics for proteins detected in only a minority of the panel.
-**Conservative Cross-Line Imputation:** Missing values in rows passing the 50% detection threshold were imputed using the **global mean value of that protein across all cell lines**. This aligns missing data with the center of the vector, compressing structural noise and minimizing their influence on differential analysis while avoiding data loss.
-**Cohort Co-indexing:** All loaded matrices were co-indexed along identical cell line designators, matching tissue metadata origins. Because imputation and filtering occur prior to loading, all calculation streams operate on a standardized multi-omic data frame at runtime with full coverage across cell lines.
+** Sparse Protein Filtering:** Any proteomic feature demonstrating unassigned values across more than 50% of the aggregate cell lines was completely dropped. This avoids unreliable group statistics for proteins detected in only a minority of the panel.
+** Conservative Cross-Line Imputation:** Missing values in rows passing the 50% detection threshold were imputed using the **global mean value of that protein across all cell lines**. This aligns missing data with the center of the vector, compressing structural noise and minimizing their influence on differential analysis while avoiding data loss.
+** Cohort Co-indexing:** All loaded matrices were co-indexed along identical cell line designators, matching tissue metadata origins. Because imputation and filtering occur prior to loading, all calculation streams operate on a standardized multi-omic data frame at runtime with full coverage across cell lines.
 
 ---
 
