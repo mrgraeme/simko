@@ -55,15 +55,45 @@ def get_differentials(class_df, data_df, n):
     return diff_df.drop(columns=['low_std', 'median_std']).sort_values('diff', ascending=True)
 
 def get_differentials_boxplot(class_df, data_df, protein_list, n):
-    data_slice = data_df.reset_index()
-    data_slice = data_slice.loc[data_slice['protein'].isin(protein_list)]
-    data_slice = data_slice.melt(id_vars='protein')
+    # 1. Grab the global protein order straight from session state configuration
+    # This ensures it exactly mirrors the order you picked or pasted them in.
+    global_order = st.session_state.get('saved_protein_list', [])
     
-    class_slice = class_df[['class']].reset_index()
-    box_data = data_slice.merge(class_slice, how='left', left_on='variable', right_on='index').dropna()
+    # Filter global order to only include proteins actually present in the data slice
+    plot_order = [p for p in global_order if p in protein_list]
+    
+    # Fallback to current slice if global list isn't populated yet
+    if not plot_order:
+        plot_order = protein_list
+
+    # 2. Reshape and merge the matrix data
+    data_df = data_df.reset_index()
+    data_df = data_df.loc[data_df['protein'].isin(plot_order)]
+    data_df = data_df.melt(id_vars='protein')
+    
+    class_df = class_df[['class']].reset_index()
+    box_data = data_df.merge(class_df, how='left', left_on='variable', right_on='index').dropna()
+    
+    # 3. Define standard ggplot2-inspired aesthetic colors
+    # Hex approximations for ggplot2 defaults: Cornflower Blue-ish (#619CFF) & Rose Pink (#F8766D)
+    ggplot2_palette = {
+        'median': '#619CFF',
+        'low': '#F8766D'
+    }
     
     fig = plt.figure(figsize=(10, 4))
-    sns.boxplot(data=box_data, x="protein", y="value", hue='class')
+    
+    # 4. Enforce order and palette strictly
+    sns.boxplot(
+        data=box_data, 
+        x="protein", 
+        y="value", 
+        hue='class', 
+        order=plot_order,                 # Force your configuration page sorting sequence
+        hue_order=['median', 'low'],      # Lock category hierarchy
+        palette=ggplot2_palette           # Apply constant color map
+    )
+    
     plt.xticks(rotation=45)
     plt.tight_layout()
     return fig

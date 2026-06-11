@@ -54,14 +54,38 @@ def get_differentials(class_df, data_df, n):
     return diff_df.drop(columns=['mutated_std', 'non-mutated_std']).sort_values('diff', ascending=True)
 
 def get_differentials_boxplot(class_df, data_df, protein_list, n):
+    # 1. Grab global protein sorting order
+    global_order = st.session_state.get('saved_protein_list', [])
+    plot_order = [p for p in global_order if p in protein_list]
+    if not plot_order:
+        plot_order = protein_list
+
+    # 2. Reshape data
     data_df = data_df.reset_index()
-    data_df = data_df.loc[data_df['protein'].isin(protein_list)]
+    data_df = data_df.loc[data_df['protein'].isin(plot_order)]
     data_df = data_df.melt(id_vars='protein')
+    
     class_df = class_df[['class']].reset_index()
     box_data = data_df.merge(class_df, how='left', left_on='variable', right_on='index').dropna()
     
+    # 3. Map mutation labels to the same color profiles
+    ggplot2_palette = {
+        'non-mutated': '#619CFF',  # Cornflower blue acts as base
+        'mutated': '#F8766D'      # Pink highlights variants
+    }
+    
     fig = plt.figure(figsize=(10, 4))
-    sns.boxplot(data=box_data, x="protein", y="value", hue='class', palette='pastel')
+    
+    sns.boxplot(
+        data=box_data, 
+        x="protein", 
+        y="value", 
+        hue='class', 
+        order=plot_order,
+        hue_order=['non-mutated', 'mutated'],
+        palette=ggplot2_palette
+    )
+    
     plt.xticks(rotation=45)
     plt.tight_layout()
     return fig

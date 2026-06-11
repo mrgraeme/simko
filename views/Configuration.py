@@ -90,21 +90,31 @@ st.subheader("3. Downstream Protein Focus List")
 with st.expander("💡 Quick Paste Proteins (Comma or Newline Separated)"):
     pasted_input = st.text_area("Paste tracking list IDs here:", help="Example: P53, EGFR, BRCA1")
     
-    if st.button("Append to Protein List"):
+if st.button("Append to Protein List"):
         if pasted_input:
+            # 1. Parse the text into clean strings
             parsed_list = re.split(r'[,\n]+', pasted_input)
             parsed_list = [p.strip() for p in parsed_list if p.strip()]
             valid_pasted = [p for p in parsed_list if p in protein_options]
             
-            # Merge with existing shadow selections safely
-            updated_list = list(set(st.session_state['saved_protein_list'] + valid_pasted))
-            st.session_state['saved_protein_list'] = updated_list
+            # 2. FIX: Deduplicate while explicitly preserving the structural sequence order
+            current_list = st.session_state['saved_protein_list']
+            for p in valid_pasted:
+                if p not in current_list:
+                    current_list.append(p)
+            
+            # 3. Synchronize both state keys to avoid the linear lifecycle trap
+            st.session_state['saved_protein_list'] = current_list
+            st.session_state['temp_protein_list'] = current_list
             
             if len(valid_pasted) < len(parsed_list):
                 missing = set(parsed_list) - set(valid_pasted)
                 st.warning(f"Added {len(valid_pasted)} proteins. Ignored {len(missing)} invalid symbols.")
             else:
-                st.success(f"Successfully appended {len(valid_pasted)} proteins to list!")
+                st.success(f"Successfully appended {len(valid_pasted)} proteins to list (order preserved)!")
+            
+            # 4. Force immediate screen redraw
+            st.rerun()
 
 st.multiselect(
     'Selected Protein List',
