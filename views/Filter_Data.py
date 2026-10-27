@@ -15,7 +15,7 @@ def get_expression_data():
 
 @st.cache_data
 def get_mutation_data():
-    mutation = pd.read_csv('./data/full_mutation.csv')
+    mutation = pd.read_csv('./data/mutation.csv')
     return mutation.set_index('protein')
 
 # Load raw matrices

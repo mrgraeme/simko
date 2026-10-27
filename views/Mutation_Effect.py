@@ -1,139 +1,51 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from scipy.stats import t
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-@st.cache_data
-def get_abundance_data():
-    return pd.read_csv('./data/abundance.csv').set_index('protein')
+from simko_utils import (
+    get_abundance_data, get_expression_data, get_mutation_data, get_dependency_data,
+    get_classes_by_mutation_status, get_differentials, get_mutation_differentials,
+    get_diff_summary, render_raw_table, get_differentials_boxplot, select_outliers,
+    compute_tissue_variance_explained, style_results_table, get_tissue_variance_column_config,
+    get_correlation_scores,
+)
 
-@st.cache_data
-def get_expression_data():
-    return pd.read_csv('./data/expression.csv').set_index('protein')
-
-@st.cache_data
-def get_mutation_data():
-    return pd.read_csv('./data/full_mutation.csv').set_index('protein')
-
-@st.cache_data
-def get_dependency_data():
-    return pd.read_csv('./data/dependency.csv').set_index('protein')
-
-# Math & Analytics Utilities
-def get_classes_by_mutation(protein_list, mutation, n):
-    mutation_filter = mutation.loc[mutation.index.isin(protein_list)].T
-    mutation_filter['mutation_count'] = mutation_filter.sum(axis=1)
-    mutated = mutation_filter.loc[mutation_filter['mutation_count'] > 0].sort_values('mutation_count', ascending=False).copy()
-    non_mutated = mutation_filter.loc[mutation_filter['mutation_count'] == 0].copy()
-    
-    mutated['class'] = 'mutated'
-    non_mutated['class'] = 'non-mutated'
-    return pd.concat([mutated, non_mutated])
-
-def ttest_from_sample_stats(row, n_cls=20):
-    pooled_sd = np.sqrt((((n_cls-1)*(row['mutated_std']**2)) + ((n_cls-1)*(row['non-mutated_std']**2))) / (n_cls + n_cls - 2))
-    if pooled_sd == 0:
-        return 1.0
-    t_stat = (row['mutated'] - row['non-mutated']) / (pooled_sd * np.sqrt(1/n_cls + 1/n_cls))
-    return 2 * (1 - t.cdf(abs(t_stat), (n_cls + n_cls - 2)))
-
-def get_differentials(class_df, data_df, n):
-    non_mutated_class = list(class_df.loc[class_df['class']=='non-mutated'].index)
-    mutated_class = list(class_df.loc[class_df['class']=='mutated'].index)
-    
-    diff_df = pd.DataFrame()
-    diff_df['non-mutated'] = data_df.filter(non_mutated_class).mean(axis=1)
-    diff_df['non-mutated_std'] = data_df.filter(non_mutated_class).std(axis=1)
-    diff_df['mutated'] = data_df.filter(mutated_class).mean(axis=1)
-    diff_df['mutated_std'] = data_df.filter(mutated_class).std(axis=1)
-    
-    diff_df['diff'] = diff_df['mutated'] - diff_df['non-mutated']
-    diff_df['p'] = diff_df.apply(ttest_from_sample_stats, n_cls=n, axis=1)
-    return diff_df.drop(columns=['mutated_std', 'non-mutated_std']).sort_values('diff', ascending=True)
-
-def get_differentials_boxplot(class_df, data_df, protein_list, n):
-    # 1. Grab global protein sorting order
-    global_order = st.session_state.get('saved_protein_list', [])
-    plot_order = [p for p in global_order if p in protein_list]
-    if not plot_order:
-        plot_order = protein_list
-
-    # 2. Reshape data
-    data_df = data_df.reset_index()
-    data_df = data_df.loc[data_df['protein'].isin(plot_order)]
-    data_df = data_df.melt(id_vars='protein')
-    
-    class_df = class_df[['class']].reset_index()
-    box_data = data_df.merge(class_df, how='left', left_on='variable', right_on='index').dropna()
-    
-    # 3. Map mutation labels to the same color profiles
-    ggplot2_palette = {
-        'non-mutated': '#619CFF',  # Cornflower blue acts as base
-        'mutated': '#F8766D'      # Pink highlights variants
-    }
-    
-    fig = plt.figure(figsize=(10, 4))
-    
-    sns.boxplot(
-        data=box_data, 
-        x="protein", 
-        y="value", 
-        hue='class', 
-        order=plot_order,
-        hue_order=['non-mutated', 'mutated'],
-        palette=ggplot2_palette
-    )
-    
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    return fig
-
-def process_mutations(class_df, data_df):
-    # Mapping back safely using mutated/non-mutated groups
-    m_class = list(class_df.loc[class_df['class']=='mutated'].index)
-    nm_class = list(class_df.loc[class_df['class']=='non-mutated'].index)
-    diff_df = pd.DataFrame()
-    diff_df['non-mutated'] = data_df.filter(nm_class).sum(axis=1)
-    diff_df['mutated'] = data_df.filter(m_class).sum(axis=1)
-    diff_df['diff'] = diff_df['mutated'] - diff_df['non-mutated']
-    return diff_df.sort_values('diff', ascending=True)
-
-def get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_dependency_df, protein_list):
-    ab_sub = diff_abund_df.loc[diff_abund_df.index.isin(protein_list)].copy()
-    ab_sub.columns = ['Abundance - ' + n for n in ab_sub.columns]
-    
-    ex_sub = diff_exp_df.loc[diff_exp_df.index.isin(protein_list)].copy()
-    ex_sub.columns = ['Expression - ' + n for n in ex_sub.columns]
-    
-    mu_sub = diff_mut_df.loc[diff_mut_df.index.isin(protein_list)].copy()
-    mu_sub.columns = ['Mutation - ' + n for n in mu_sub.columns]
-    
-    dep_sub = diff_dependency_df.loc[diff_dependency_df.index.isin(protein_list)].copy()
-    dep_sub.columns = ['Dependency - ' + n for n in dep_sub.columns]
-    
-    return pd.concat([ab_sub, ex_sub, mu_sub, dep_sub], axis=1)
-
-# Pipeline Setup
 abundance = get_abundance_data()
 expression = get_expression_data()
 mutation = get_mutation_data()
 dependency = get_dependency_data()
 cmap = plt.cm.get_cmap('RdYlBu_r')
 
-st.write("### Explore mutation effects 👾")
+st.write("### Explore mutation change effects 🧫")
 
-# 1. Pull settings from configuration state
 ko_targets = st.session_state.get('saved_ko_proteins', [])
 focus_proteins = st.session_state.get('saved_protein_list', [])
 active_tissues = st.session_state.get('saved_tissues', [])
 active_cell_lines = st.session_state.get('saved_cell_lines', [])
 
-# 2. Re-index active cohort slice
-all_cols = list(abundance.columns)
+strict_multi_target = st.session_state.get('saved_strict_multi_target', True)
+combo_mode = 'all' if strict_multi_target else 'any'
+
+correction_scope_choice = st.session_state.get('saved_correction_scope_choice', '')
+if correction_scope_choice.startswith('All genome-wide'):
+    scope_mode = None
+elif correction_scope_choice.startswith('Features with overall'):
+    scope_mode = 'overall_range'
+else:
+    scope_mode = 'diff'
+prefilter_ab = st.session_state.get('saved_correction_threshold_ab', 0.25)
+prefilter_ex = st.session_state.get('saved_correction_threshold_ex', 0.25)
+prefilter_dep = st.session_state.get('saved_correction_threshold_dep', 0.25)
+
+diff_floor = st.session_state.get('saved_diff_floor', 0.25)
+sig_filter_enabled = st.session_state.get('saved_sig_filter_enabled', False)
+sig_col = st.session_state.get('saved_sig_col', 'p') if sig_filter_enabled else None
+sig_threshold = st.session_state.get('saved_sig_threshold', 0.01)
+sort_by = st.session_state.get('saved_sort_by', 'diff')
+
+all_cols = list(mutation.columns)
 if active_cell_lines:
-    active_cls = active_cell_lines
+    active_cls = [c for c in active_cell_lines if c in all_cols]
 elif active_tissues:
     active_cls = [s for s in all_cols if any(xs in s for xs in active_tissues)]
 else:
@@ -144,51 +56,160 @@ expression = expression.filter(active_cls)
 mutation = mutation.filter(active_cls)
 dependency = dependency.filter(active_cls)
 
+eta_abund = compute_tissue_variance_explained(abundance)
+eta_exp = compute_tissue_variance_explained(expression)
+eta_dep = compute_tissue_variance_explained(dependency)
+eta_mut = compute_tissue_variance_explained(mutation)
+
+# Correlation view alongside the cohort-based differential -- only defined
+# for a single target (see get_correlation_scores' docstring for why: a
+# composite correlation across multiple targets hasn't been validated the
+# way the single-target case has, so this is left unset for multi-target
+# selections rather than guessing at a definition).
+if ko_targets and len(ko_targets) == 1:
+    corr_abund = get_correlation_scores(ko_targets[0], abundance)
+    corr_exp = get_correlation_scores(ko_targets[0], expression)
+    corr_dep = get_correlation_scores(ko_targets[0], dependency)
+else:
+    corr_abund = corr_exp = corr_dep = None
+
 if ko_targets:
-    st.caption(f"Analyzing variants for targets {ko_targets} across {len(active_cls)} matched cell lines.")
-    n = ((abundance.shape[1]-1) // 3) if abundance.shape[1] < 60 else 20
-    class_df = get_classes_by_mutation(ko_targets, mutation, n)
+    class_df = get_classes_by_mutation_status(ko_targets, mutation, mode=combo_mode)
+    n_mutated = int((class_df['class'] == 'low').sum())
+    n_wt = int((class_df['class'] == 'median').sum())
+    legend_labels = {'low': 'Mutated', 'median': 'Wild-type'}
 
-    if len(class_df) == 0:
-        st.error("There is not enough mutation data available to slice cohorts for this target selection.")
-    else:
-        tab1, tab2 = st.tabs(["Mutation Heatmap", "Cohort Matrix"])
-        with tab1:
-            fig = plt.figure(figsize=(10, 3))
-            sns.heatmap(class_df[['mutation_count']].sort_values('mutation_count').T.astype(float).round(1), square=True, cmap="vlag", annot=True, annot_kws={'size': 6}, cbar=False)
-            st.pyplot(fig)
-        with tab2:
-            st.table(class_df.style.background_gradient(cmap=cmap, vmin=-6, vmax=6, axis=None))
+    st.caption(
+        f"Analyzing simulated KO effects of {ko_targets} across {len(active_cls)} cell lines "
+        f"(Mutation-based classification: {n_mutated} mutated vs. {n_wt} wild-type)."
+    )
 
-        st.markdown("**Mean abundance, expression, and mutation changes across cohorts**")
-
-        protein_select = st.multiselect(
-            'Select additional proteins differences to view',
-            options=abundance.index, placeholder='Supplement tracking pool'
+    if n_mutated < 2 or n_wt < 2:
+        st.warning(
+            "⚠️ Fewer than 2 cell lines in the Mutated or Wild-type cohort for this target/mode "
+            "combination — results below will be unreliable or undefined (t-tests need at least "
+            "2 cell lines per cohort). Try the 'Compensatory' combination mode (Global Settings) if "
+            "you're using multiple targets, or pick a more frequently-mutated target."
         )
 
-        show_proteins = list(set(ko_targets + focus_proteins + protein_select))
+    col1, col2 = st.columns(2)
+    col1.metric("Mutated cell lines", n_mutated)
+    col2.metric("Wild-type cell lines", n_wt)
 
-        diff_abund_df = get_differentials(class_df, abundance, n)
-        diff_exp_df = get_differentials(class_df, expression, n)
-        diff_dependency_df = get_differentials(class_df, dependency, n)
-        diff_mut_df = process_mutations(class_df, mutation)
+    st.markdown("**Mean abundance, expression, mutation count and dependency change across mutated and wild-type classes**")
 
-        if show_proteins:
-            diff_summary = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_dependency_df, show_proteins)
-            fig_box = get_differentials_boxplot(class_df, abundance, show_proteins, n)
-            st.pyplot(fig_box)
-            st.dataframe(diff_summary.style.background_gradient(cmap=cmap, vmin=-6, vmax=6, axis=None).format("{:.3f}"))
+    local_additions = st.multiselect(
+        'Select additional downstream proteins to inspect',
+        options=mutation.index,
+        placeholder='Supplement the global protein tracking pool'
+    )
+    show_proteins = list(set(ko_targets + focus_proteins + local_additions))
 
-        st.markdown("**Proteins most significantly affected by mutation state**")
-        n_outlayers = st.slider('Number proteins by median differential', value=5, min_value=0, max_value=50)
-    
-        significant_hits = diff_abund_df[diff_abund_df['p'] < 0.05]
-        diff_proteins = list(significant_hits.head(n_outlayers).index) + list(significant_hits.tail(n_outlayers).index)
+    if show_proteins:
+        # n_mutated/n_wt here are the actual (generally unequal) cohort
+        # sizes -- see ttest_from_sample_stats in simko_utils.
+        diff_abund_track = get_differentials(class_df, abundance, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=show_proteins)
+        diff_exp_track = get_differentials(class_df, expression, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=show_proteins)
+        diff_mut_track = get_mutation_differentials(class_df, mutation, prefilter_protein_list=show_proteins)
+        diff_dep_track = get_differentials(class_df, dependency, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=show_proteins)
 
-        diff_top = get_diff_summary(diff_abund_df, diff_exp_df, diff_mut_df, diff_dependency_df, diff_proteins)
-        st.dataframe(diff_top.style.background_gradient(cmap=cmap, vmin=-6, vmax=6, axis=None).format("{:.3f}"))
+        diff_summary = get_diff_summary(diff_abund_track, diff_exp_track, diff_mut_track, show_proteins, diff_dep_df=diff_dep_track, eta_sq=eta_abund, corr_abund_df=corr_abund, corr_exp_df=corr_exp, corr_dep_df=corr_dep)
 
-        st.download_button('Download Differential Summary Table', diff_abund_df.to_csv(index=True).encode('utf-8'), f"mutation_differentials_{'_'.join(ko_targets)}.csv", "text/csv")
+        tab_dep, tab_ab, tab_ex, tab_mut = st.tabs(["Gene Dependency", "Abundance", "Expression", "Mutation"])
+        with tab_dep:
+            st.pyplot(get_differentials_boxplot(class_df, dependency, show_proteins, diff_df=diff_dep_track, title='Dependency', ylabel='dependency score', legend_labels=legend_labels))
+        with tab_ab:
+            st.pyplot(get_differentials_boxplot(class_df, abundance, show_proteins, diff_df=diff_abund_track, title='Abundance', ylabel='abundance', legend_labels=legend_labels))
+        with tab_ex:
+            st.pyplot(get_differentials_boxplot(class_df, expression, show_proteins, diff_df=diff_exp_track, title='Expression', ylabel='expression', legend_labels=legend_labels))
+        with tab_mut:
+            st.pyplot(get_differentials_boxplot(class_df, mutation, show_proteins, diff_df=diff_mut_track, title='Mutation', ylabel='mutation count', legend_labels=legend_labels))
+
+        st.caption(
+            f"q-values above are corrected across only your {len(show_proteins)} chosen proteins "
+            "(m = list size), not genome-wide — see Global Settings for details."
+        )
+
+        tbl_summary, tbl_raw_ab, tbl_raw_ex, tbl_raw_mut, tbl_raw_dep = st.tabs(
+            ["Summary", "Raw Abundance", "Raw Expression", "Raw Mutation", "Raw Dependency"]
+        )
+        with tbl_summary:
+            st.dataframe(style_results_table(diff_summary, cmap), column_config=get_tissue_variance_column_config())
+        with tbl_raw_ab:
+            render_raw_table(abundance, show_proteins, class_df, cmap, 'Abundance', f"abundance_raw_tracked_{'_'.join(ko_targets)}", eta_sq=eta_abund)
+        with tbl_raw_ex:
+            render_raw_table(expression, show_proteins, class_df, cmap, 'Expression', f"expression_raw_tracked_{'_'.join(ko_targets)}", eta_sq=eta_exp)
+        with tbl_raw_mut:
+            render_raw_table(mutation, show_proteins, class_df, cmap, 'Mutation', f"mutation_raw_tracked_{'_'.join(ko_targets)}", eta_sq=eta_mut)
+        with tbl_raw_dep:
+            render_raw_table(dependency, show_proteins, class_df, cmap, 'Dependency', f"dependency_raw_tracked_{'_'.join(ko_targets)}", eta_sq=eta_dep)
+
+    st.markdown("**Proteins most significantly affected by simulated KO of targets**")
+
+    diff_abund_df = get_differentials(class_df, abundance, n_mutated, n_wt, prefilter_mode=scope_mode, prefilter_min=prefilter_ab)
+    diff_exp_df = get_differentials(class_df, expression, n_mutated, n_wt, prefilter_mode=scope_mode, prefilter_min=prefilter_ex)
+    diff_mut_df = get_mutation_differentials(class_df, mutation)
+    diff_dep_df = get_differentials(class_df, dependency, n_mutated, n_wt, prefilter_mode=scope_mode, prefilter_min=prefilter_dep)
+
+    filter_factor = st.selectbox('Rank & filter most-changed proteins by', options=['Dependency', 'Abundance', 'Expression', 'Mutation'])
+    n_outliers = st.slider('Number of outliers by differential', value=5, min_value=0, max_value=50)
+
+    factor_diff_map = {'Dependency': diff_dep_df, 'Abundance': diff_abund_df, 'Expression': diff_exp_df, 'Mutation': diff_mut_df}
+    selected_diff_df = factor_diff_map[filter_factor]
+
+    diff_proteins, n_pass, n_total = select_outliers(
+        selected_diff_df,
+        filter_col=sig_col if sig_col else 'p', threshold=sig_threshold if sig_col else 1.01,
+        n_outliers=n_outliers, min_abs_diff=diff_floor, sort_by=sort_by,
+    )
+    st.caption(
+        f"{n_pass} of {n_total} {filter_factor.lower()} features pass |diff| ≥ {diff_floor:g}"
+        + (f" and {'p' if sig_col=='p' else 'q'} < {sig_threshold:g}" if sig_col else "") + ". "
+        f"Table below shows up to {2 * n_outliers} of those. Adjust these thresholds in "
+        "Global Settings → Statistical Analysis Settings."
+    )
+
+    # See 1_Abundance.py for why this recomputation is needed: without it,
+    # genes selected via one layer's ranking can be missing from another
+    # layer's independently diff-prefiltered table, showing up as
+    # unlabelled boxplots and NaN ("blacked out") summary cells.
+    diff_abund_top = get_differentials(class_df, abundance, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=diff_proteins)
+    diff_exp_top = get_differentials(class_df, expression, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=diff_proteins)
+    diff_mut_top = get_mutation_differentials(class_df, mutation, prefilter_protein_list=diff_proteins)
+    diff_dep_top = get_differentials(class_df, dependency, n_mutated, n_wt, prefilter_mode='protein_list', prefilter_protein_list=diff_proteins)
+
+    tab_dep, tab_ab, tab_ex, tab_mut = st.tabs(["Gene Dependency", "Abundance", "Expression", "Mutation"])
+    with tab_dep:
+        st.pyplot(get_differentials_boxplot(class_df, dependency, diff_proteins, diff_df=diff_dep_top, title='Dependency', ylabel='dependency score', use_global_order=False, legend_labels=legend_labels))
+    with tab_ab:
+        st.pyplot(get_differentials_boxplot(class_df, abundance, diff_proteins, diff_df=diff_abund_top, title='Abundance', ylabel='abundance', use_global_order=False, legend_labels=legend_labels))
+    with tab_ex:
+        st.pyplot(get_differentials_boxplot(class_df, expression, diff_proteins, diff_df=diff_exp_top, title='Expression', ylabel='expression', use_global_order=False, legend_labels=legend_labels))
+    with tab_mut:
+        st.pyplot(get_differentials_boxplot(class_df, mutation, diff_proteins, diff_df=diff_mut_top, title='Mutation', ylabel='mutation count', use_global_order=False, legend_labels=legend_labels))
+
+    diff_top = get_diff_summary(diff_abund_top, diff_exp_top, diff_mut_top, diff_proteins, diff_dep_df=diff_dep_top, eta_sq=eta_abund, corr_abund_df=corr_abund, corr_exp_df=corr_exp, corr_dep_df=corr_dep)
+
+    tbl_summary, tbl_raw_ab, tbl_raw_ex, tbl_raw_mut, tbl_raw_dep = st.tabs(
+        ["Summary", "Raw Abundance", "Raw Expression", "Raw Mutation", "Raw Dependency"]
+    )
+    with tbl_summary:
+        st.dataframe(style_results_table(diff_top, cmap), column_config=get_tissue_variance_column_config())
+        st.download_button(
+            f'Download All {filter_factor} Foldchanges',
+            selected_diff_df.to_csv(index=True).encode('utf-8'),
+            f"{filter_factor.lower()}_foldchange_{'_'.join(ko_targets)}.csv",
+            "text/csv",
+            key="download_outlier_foldchange"
+        )
+    with tbl_raw_ab:
+        render_raw_table(abundance, diff_proteins, class_df, cmap, 'Abundance', f"abundance_raw_{filter_factor.lower()}_{'_'.join(ko_targets)}", eta_sq=eta_abund)
+    with tbl_raw_ex:
+        render_raw_table(expression, diff_proteins, class_df, cmap, 'Expression', f"expression_raw_{filter_factor.lower()}_{'_'.join(ko_targets)}", eta_sq=eta_exp)
+    with tbl_raw_mut:
+        render_raw_table(mutation, diff_proteins, class_df, cmap, 'Mutation', f"mutation_raw_{filter_factor.lower()}_{'_'.join(ko_targets)}", eta_sq=eta_mut)
+    with tbl_raw_dep:
+        render_raw_table(dependency, diff_proteins, class_df, cmap, 'Dependency', f"dependency_raw_{filter_factor.lower()}_{'_'.join(ko_targets)}", eta_sq=eta_dep)
+
 else:
-    st.warning("⚠️ No Knockout targets set. Go to **Global Settings** to pick your targets.")
+    st.warning("⚠️ No Knockout targets set. Go to **Global Settings** to pick your target proteins for KO simulation.")

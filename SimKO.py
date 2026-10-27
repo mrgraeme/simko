@@ -30,7 +30,7 @@ pages = {
         st.Page("views/Filter_Data.py", title="Filter Data", icon="🔬"),
     ],
     "Effect Analysis": [
-        st.Page("views/Simulated_KO_Effect.py", title="Abundance Effects", icon="🧁"),
+        st.Page("views/Abundance_Effect.py", title="Abundance Effects", icon="🧁"),
         st.Page("views/Expression_Effect.py", title="Expression Effect", icon="🫶"),
         st.Page("views/Mutation_Effect.py", title="Mutation Effect", icon="👾"),
     ],

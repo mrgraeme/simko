@@ -1,1 +1,5 @@
 *venv*
+__pycache__
+validation/data/*
+validation/results/*
+.DS_Store
